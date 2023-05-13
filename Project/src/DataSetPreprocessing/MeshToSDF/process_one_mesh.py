@@ -205,7 +205,7 @@ def create_one_sdf(sdfcommand, sdf_res, expand_rate, sdf_file, obj_file, indx, g
         command_str += " -g " + str(g)
     print("[*] command:", command_str)
     os.system(command_str)
-    command_str2 = "move " + str(indx)+".dist " + sdf_file
+    command_str2 = "mv " + str(indx)+".dist " + sdf_file
     print("[*] command:", command_str2)
     os.system(command_str2)
 
@@ -248,6 +248,7 @@ def process_one_obj(sdfcommand,
                     obj_file,
                     iso_val,
                     max_verts,
+                    folder_name,
                     ish5=True, normalize=True, g=0.00, reduce=4):
     '''
     Usage: SDFGen <filename> <dx> <padding>
@@ -265,7 +266,7 @@ def process_one_obj(sdfcommand,
 
     dataroot = '../../data'
 
-    tmp_dir = f'tmp/for_sdf'
+    tmp_dir = f'{folder_name}/tmp/for_sdf'
     model_dir = f'{tmp_dir}/model'
     norm_mesh_dir = f'{tmp_dir}/norm_mesh'
     sdf_dir = f'{tmp_dir}/sdf'
@@ -324,10 +325,10 @@ def process_one_obj(sdfcommand,
 
 
 
-def process_obj(obj_file):
+def process_obj(obj_file,folder_name):
 
-    sdfcommand = './preprocess/isosurface/computeDistanceField'
-    # sdfcommand = './isosurface/computeDistanceField'
+    #sdfcommand = './preprocess/isosurface/computeDistanceField'
+    sdfcommand = './isosurface/computeDistanceField'
     mcube_cmd = 'preprocess/isosurface/computeMarchingCubes'
     lib_cmd = 'preprocess/isosurface/LIB_PATH'
 
@@ -349,7 +350,7 @@ def process_obj(obj_file):
 
     os.environ['LD_LIBRARY_PATH'] = '$LD_LIBRARY_PATH:./preprocess/isosurface/:./preprocess/isosurface/tbb/tbb2018_20180822oss/lib/intel64/gcc4.7:/opt/intel/lib/intel64:/opt/intel/mkl/lib/intel64:/usr/local/lib64:/usr/local/lib:/usr/local/cuda/lib64'
 
-    tmp_dir = f'tmp/for_sdf'
+    tmp_dir = f'{folder_name}/tmp/for_sdf'
     model_dir = f'{tmp_dir}/model'
     norm_mesh_dir = f'{tmp_dir}/norm_mesh'
     sdf_dir = f'{tmp_dir}/sdf'
@@ -362,57 +363,3 @@ def process_obj(obj_file):
 
     print(f'[*] successfully extract sdf and save to: {h5_file}')
     return h5_file
-
-if __name__ == "__main__":
-
-    # nohup python -u create_point_sdf_fullgrid.py &> createfull.log &
-    # lst_dir, cats, all_cats, raw_dirs = create_file_lst_abc.get_all_info()
-    
-    # dset = FLAGS.dset
-    # cat = FLAGS.category
-
-    # lst_dir, cats, all_cats, raw_dirs = create_sdf_file_lst.get_all_info(dset)
-
-    # # if dset != 'abc':
-    #     if cat == 'all':
-    #         FLAGS.cats = all_cats
-    #     else:
-    #         FLAGS.cats = [cat]
-
-
-    # obj_file = FLAGS.obj_file
-
-    obj_file = '../demo_data/chair_model.obj'
-
-    process_obj(obj_file)
-
-    import pdb; pdb.set_trace()
-
-    sdfcommand = './isosurface/computeDistanceField'
-    mcube_cmd = './isosurface/computeMarchingCubes'
-    lib_cmd = './isosurface/LIB_PATH'
-
-    num_sample = 64 ** 3
-    bandwidth = 0.1 # snet
-    sdf_res = 256
-    expand_rate = 1.3
-    iso_val = 0.003 # snet
-    max_verts = 16384
-    g=0.0 # snet
-    # g=0.1 # bunny
-
-    #  full set
-    # create_sdf(sdfcommand,
-    #            mcube_cmd,
-    #            "source %s" % lib_cmd, 274625, 0.1,
-    #            256, 1.3, all_cats, cats, raw_dirs,
-    #            lst_dir, 0.003, 16384, ish5=True, normalize=True, g=0.00, reduce=4)
-    # create_sdf_obj(sdfcommand,
-    #            mcube_cmd,
-    #            "source %s" % lib_cmd, num_sample, bandwidth,
-    #            res, expand_rate, raw_dirs, iso_val, max_verts, ish5=True, normalize=True, g=0.00, reduce=4)
-
-    process_one_obj(sdfcommand, mcube_cmd, "source %s" % lib_cmd,
-                num_sample, bandwidth, sdf_res, expand_rate, obj_file, iso_val,
-                max_verts, ish5=True, normalize=True, g=g, reduce=4)
-    

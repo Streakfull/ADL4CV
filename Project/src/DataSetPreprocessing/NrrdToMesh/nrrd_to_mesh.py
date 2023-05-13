@@ -45,7 +45,7 @@ def construct_full_nrrd_file_path(folder_name):
         None
 
 """
-    return f"{DATA_SET_PATH}/{folder_name}/{folder_name}.nrrd"
+    return f"{DATA_SET_PATH}/{folder_name}/{folder_name}{NRRD_EXTENSION}"
 
 
 def convert_data_set_to_mesh():
