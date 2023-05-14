@@ -7,6 +7,8 @@ from constants import NRRD_EXTENSION, OBJ_EXTENTION, DEMO_ARGUMENT, DATA_SET_PAT
 from process_one_mesh import process_obj,process_one_obj
 #import pdb
 import tqdm
+import pyblaze.multiprocessing as xmp
+import numpy as np
 #pdb.set_trace()
 
 # Configuration
@@ -42,11 +44,11 @@ def construct_full_obj_file_path(folder_name):
     return f"{construct_full_folder_path(folder_name)}/{folder_name}{OBJ_EXTENTION}"
 
 
-def obj_to_sdf(file_name,folder_name):
-    process_obj(file_name,folder_name)
+def obj_to_sdf(file_name,folder_name,index):
+    #process_obj(file_name,folder_name)
     process_one_obj(sdfcommand, mcube_cmd, "source %s" % lib_cmd,
                 num_sample, bandwidth, sdf_res, expand_rate, file_name, iso_val,
-                max_verts,folder_name, ish5=True, normalize=True, g=g, reduce=4)
+                max_verts,folder_name, index, ish5=True, normalize=True, g=g, reduce=4)
     
 
 
@@ -61,14 +63,31 @@ def convert_data_set_to_sdf():
     """
     directories = os.listdir(DATA_SET_PATH)
     with open(TEMP_PATH, "w") as file:
-        for index in tqdm.tqdm(range(0, len(directories))):
+        for index in tqdm.tqdm(range(0, 20)):
             directory_name = directories[index]
             folder_name = construct_full_folder_path(directory_name)
             file_name = construct_full_obj_file_path(directory_name)
-            obj_to_sdf(file_name)
+            obj_to_sdf(file_name,folder_name)
             file.write(directory_name)
             file.write('\n')
             shutil.rmtree(f'{folder_name}/tmp', ignore_errors=True)
+
+directories = os.listdir(DATA_SET_PATH)
+def obj_to_mesh(index):
+      directory_name = directories[index]
+      folder_name = construct_full_folder_path(directory_name)
+      file_name = construct_full_obj_file_path(directory_name)
+      obj_to_sdf(file_name,folder_name,index)
+    #   file.write(directory_name)
+    #   file.write('\n')
+      print("DONE",index)
+      shutil.rmtree(f'{folder_name}/tmp', ignore_errors=True)
+
+def parallel():
+    indices = np.arange(len(directories))
+    tokenizer = xmp.Vectorizer(obj_to_mesh, num_workers=10)
+    return tokenizer.process(indices)
+
 
 
 if __name__ == "__main__":
@@ -76,7 +95,9 @@ if __name__ == "__main__":
     is_demo = len(arguments) > 1 and sys.argv[1] == DEMO_ARGUMENT
     if is_demo:
     #    shutil.rmtree("tmp", ignore_errors=True)
+        #print(os.cpu_count(),"COUNT")
         obj_to_sdf("demo.obj","")
     else:
-        convert_data_set_to_sdf()
+        parallel()
+        #convert_data_set_to_sdf()
 
