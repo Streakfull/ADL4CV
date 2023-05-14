@@ -7,6 +7,7 @@ from constants import NRRD_EXTENSION, OBJ_EXTENTION, DEMO_ARGUMENT, DATA_SET_PAT
 import skimage.measure as measure
 import numpy as np
 import tqdm
+import pyblaze.multiprocessing as xmp
 
 
 def nrrd_to_mesh(file_name):
@@ -64,6 +65,17 @@ def convert_data_set_to_mesh():
             nrrd_to_mesh(file_name)
             file.write(directory_name)
             file.write('\n')
+
+def obj_to_mesh(directory_name):
+       file_name = construct_full_nrrd_file_path(directory_name)
+       nrrd_to_mesh(file_name)
+    #    file.write(directory_name)
+    #    file.write('\n')
+
+def parallel():
+    directories = os.listdir(DATA_SET_PATH)
+    tokenizer = xmp.Vectorizer(obj_to_mesh, num_workers=18)
+    return tokenizer.process(directories)
 
 
 if __name__ == "__main__":
