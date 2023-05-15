@@ -7,7 +7,7 @@ from constants import NRRD_EXTENSION, OBJ_EXTENTION, DEMO_ARGUMENT, DATA_SET_PAT
 import skimage.measure as measure
 import numpy as np
 import tqdm
-import pyblaze.multiprocessing as xmp
+
 
 
 def nrrd_to_mesh(file_name):
