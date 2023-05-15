@@ -9,6 +9,7 @@ import numpy as np
 import tqdm
 
 
+
 def nrrd_to_mesh(file_name):
     """ Converts an nrrd file from the raw dataset to a mesh object and
         exports the mesh object to the dataset folder defined in constants.py
@@ -64,6 +65,7 @@ def convert_data_set_to_mesh():
             nrrd_to_mesh(file_name)
             file.write(directory_name)
             file.write('\n')
+
 
 
 if __name__ == "__main__":

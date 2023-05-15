@@ -8,7 +8,9 @@ import trimesh
 from scipy.interpolate import RegularGridInterpolator
 import time
 import pdb
-# import pymesh
+from joblib import Parallel, delayed
+import subprocess
+
 
 
 def get_sdf(sdf_file, sdf_res):
@@ -196,7 +198,6 @@ def get_normalize_mesh(model_file, norm_mesh_sub_dir):
 
 
 def create_one_sdf(sdfcommand, sdf_res, expand_rate, sdf_file, obj_file, indx, g=0.0):
-
     # command_str = ". " + sdfcommand + " " + obj_file + " " + str(sdf_res) + " " + str(sdf_res) + \
     command_str = sdfcommand + " " + obj_file + " " + str(sdf_res) + " " + str(sdf_res) + \
        " " + str(sdf_res) + " -s " + " -e " + str(expand_rate) + " -o " + str(indx) + ".dist -m 1"
@@ -204,39 +205,44 @@ def create_one_sdf(sdfcommand, sdf_res, expand_rate, sdf_file, obj_file, indx, g
     if g > 0.0:
         command_str += " -g " + str(g)
     print("[*] command:", command_str)
-    os.system(command_str)
+    #os.system(command_str)
+    subprocess.run(command_str, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT,shell=True)
     command_str2 = "mv " + str(indx)+".dist " + sdf_file
     print("[*] command:", command_str2)
-    os.system(command_str2)
+    subprocess.run(command_str2, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT,shell=True)
+    #os.system(command_str2)
 
 def create_sdf_obj(sdfcommand, marching_cube_command, norm_mesh_dir, sdf_dir, obj,
-       sdf_res, iso_val, expand_rate, indx, ish5, normalize, num_sample, bandwidth, max_verts, g, reduce, h5_file=None):
+       sdf_res, iso_val, expand_rate, indx, ish5, normalize, num_sample, bandwidth, max_verts, g, reduce, index, h5_file=None):
+    try:
+        model_id = os.path.basename(obj).replace('.obj', '')
 
-    model_id = os.path.basename(obj).replace('.obj', '')
+        norm_mesh_sub_dir = os.path.join(norm_mesh_dir, model_id)
+        sdf_sub_dir = os.path.join(sdf_dir, model_id)
 
-    norm_mesh_sub_dir = os.path.join(norm_mesh_dir, model_id)
-    sdf_sub_dir = os.path.join(sdf_dir, model_id)
+        if not os.path.exists(norm_mesh_sub_dir): os.makedirs(norm_mesh_sub_dir)
+        if not os.path.exists(sdf_sub_dir): os.makedirs(sdf_sub_dir)
 
-    if not os.path.exists(norm_mesh_sub_dir): os.makedirs(norm_mesh_sub_dir)
-    if not os.path.exists(sdf_sub_dir): os.makedirs(sdf_sub_dir)
-    
-    sdf_file = os.path.join(sdf_sub_dir, "isosurf.sdf")
+        sdf_file = os.path.join(sdf_sub_dir, "isosurf.sdf")
 
-    if h5_file is None:
-        h5_file = obj.replace('.obj', '_sdf.h5')
-    # h5_file = os.path.join(sdf_sub_dir, "ori_sample_grid.h5")
+        if h5_file is None:
+            h5_file = obj.replace('.obj', '_sdf.h5')
 
-        # model_file = os.path.join(cat_mesh_dir, obj, "models", "model_normalized.obj")
-        # model_file = os.path.join(cat_mesh_dir, obj, "model.obj")
-    model_file = obj
-    print("[*] creating", sdf_file)
-    if normalize:
-        norm_obj_file, centroid, m = get_normalize_mesh(model_file, norm_mesh_sub_dir)
+        # h5_file = os.path.join(sdf_sub_dir, "ori_sample_grid.h5")
 
-    create_one_sdf(sdfcommand, sdf_res, expand_rate, sdf_file, norm_obj_file, indx, g=g)
-    # save to h5
-    create_h5_sdf_pt(h5_file, sdf_file, norm_obj_file,
-            centroid, m, sdf_res, num_sample, bandwidth, iso_val, max_verts, normalize, reduce=reduce)
+            # model_file = os.path.join(cat_mesh_dir, obj, "models", "model_normalized.obj")
+            # model_file = os.path.join(cat_mesh_dir, obj, "model.obj")
+        model_file = obj
+        print("[*] creating", sdf_file)
+        if normalize:
+            norm_obj_file, centroid, m = get_normalize_mesh(model_file, norm_mesh_sub_dir)
+
+        create_one_sdf(sdfcommand, sdf_res, expand_rate, sdf_file, norm_obj_file,indx, g=g)
+        # save to h5
+        create_h5_sdf_pt(h5_file, sdf_file, norm_obj_file,
+                centroid, m, sdf_res, num_sample, bandwidth, iso_val, max_verts, normalize, reduce=reduce)
+    except Exception as er:
+        print(er,"EREORRR")
 
 def process_one_obj(sdfcommand,
                     marching_cube_command,
@@ -249,6 +255,7 @@ def process_one_obj(sdfcommand,
                     iso_val,
                     max_verts,
                     folder_name,
+                    index,
                     ish5=True, normalize=True, g=0.00, reduce=4):
     '''
     Usage: SDFGen <filename> <dx> <padding>
@@ -275,7 +282,8 @@ def process_one_obj(sdfcommand,
     if not os.path.exists(sdf_dir): os.makedirs(sdf_dir)
 
     # list_obj = os.listdir(model_dir)
-    list_obj = [obj_file]
+    #list_obj = [obj_file]
+    list_obj = obj_file
 
     repeat = len(list_obj)
     sdfcommand_lst=[sdfcommand for i in range(repeat)]
@@ -294,32 +302,32 @@ def process_one_obj(sdfcommand,
     g_lst=[g for i in range(repeat)]
     reduce_lst=[reduce for i in range(repeat)]
 
-    # parallel
-    # with Parallel(n_jobs=5) as parallel:
-    #     parallel(delayed(create_sdf_obj)
-    #     (sdfcommand, marching_cube_command, norm_mesh_dir, sdf_dir, obj, res, iso_val, expand_rate, indx, ish5, norm, num_sample, bandwidth, max_verts, g, reduce)
-    #     for sdfcommand, marching_cube_command, norm_mesh_dir, sdf_dir, obj, res, iso_val, 
-    #         expand_rate, indx, ish5, norm, num_sample, bandwidth, max_verts, g, reduce
-    #         in zip(sdfcommand_lst,
-    #                marching_cube_command_lst,
-    #                norm_mesh_dir_lst,
-    #                sdf_dir_lst,
-    #                list_obj,
-    #                res_lst,
-    #                iso_val_lst,
-    #                expand_rate_lst,
-    #                indx_lst, ish5_lst, normalize_lst, num_sample_lst,
-    #                bandwidth_lst, max_verts_lst, g_lst, reduce_lst))
+    #parallel
+    with Parallel(n_jobs=8) as parallel:
+        parallel(delayed(create_sdf_obj)
+        (sdfcommand, marching_cube_command, norm_mesh_dir, sdf_dir, obj, res, iso_val, expand_rate, indx, ish5, norm, num_sample, bandwidth, max_verts, g, reduce, index)
+        for sdfcommand, marching_cube_command, norm_mesh_dir, sdf_dir, obj, res, iso_val, 
+            expand_rate, indx, ish5, norm, num_sample, bandwidth, max_verts, g, reduce
+            in zip(sdfcommand_lst,
+                   marching_cube_command_lst,
+                   norm_mesh_dir_lst,
+                   sdf_dir_lst,
+                   list_obj,
+                   res_lst,
+                   iso_val_lst,
+                   expand_rate_lst,
+                   indx_lst, ish5_lst, normalize_lst, num_sample_lst,
+                   bandwidth_lst, max_verts_lst, g_lst, reduce_lst))
 
-    # no parallel
-    for (sdfcommand, marching_cube_command, norm_mesh_dir, sdf_dir, obj, sdf_res, iso_val, 
-        expand_rate, indx, ish5, norm, num_sample, bandwidth, max_verts, g, reduce) in \
-        zip(sdfcommand_lst, marching_cube_command_lst, norm_mesh_dir_lst, sdf_dir_lst, list_obj,
-            res_lst, iso_val_lst, expand_rate_lst, indx_lst, ish5_lst, normalize_lst, num_sample_lst,
-            bandwidth_lst, max_verts_lst, g_lst, reduce_lst):
-            create_sdf_obj(
-                sdfcommand, marching_cube_command, norm_mesh_dir, sdf_dir, obj, sdf_res, 
-                iso_val, expand_rate, indx, ish5, norm, num_sample, bandwidth, max_verts, g, reduce)
+    #no parallel
+    # for (sdfcommand, marching_cube_command, norm_mesh_dir, sdf_dir, obj, sdf_res, iso_val, 
+    #     expand_rate, indx, ish5, norm, num_sample, bandwidth, max_verts, g, reduce) in \
+    #     zip(sdfcommand_lst, marching_cube_command_lst, norm_mesh_dir_lst, sdf_dir_lst, list_obj,
+    #         res_lst, iso_val_lst, expand_rate_lst, indx_lst, ish5_lst, normalize_lst, num_sample_lst,
+    #         bandwidth_lst, max_verts_lst, g_lst, reduce_lst):
+    #         create_sdf_obj(
+    #             sdfcommand, marching_cube_command, norm_mesh_dir, sdf_dir, obj, sdf_res, 
+    #             iso_val, expand_rate, indx, ish5, norm, num_sample, bandwidth, max_verts, g, reduce,index)
 
     print("[*] finished!")
 
