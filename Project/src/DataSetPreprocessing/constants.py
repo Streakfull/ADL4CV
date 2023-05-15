@@ -1,4 +1,4 @@
-DATA_SET_PATH = "../../RawDataSet/SandboxData"
+DATA_SET_PATH = "../../RawDataSet/nrrd_256_filter_div_32_solid"
 NRRD_EXTENSION = ".nrrd"
 OBJ_EXTENTION = ".obj"
 DEMO_ARGUMENT = "demo"
