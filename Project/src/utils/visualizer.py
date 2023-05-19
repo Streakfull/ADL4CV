@@ -48,7 +48,7 @@ def parse_line(line):
 class Visualizer():
     def __init__(self, opt):
         # self.opt = opt
-        self.isTrain = opt.isTrain
+        self.isTrain = opt.is_train
         self.gif_fps = 4
 
         if self.isTrain:
@@ -100,12 +100,13 @@ class Visualizer():
     def display_current_results(self, visuals, epoch, im_name='', phase='train'):
         
         # write images to disk
-        for label, image_numpy in visuals.items():
-            img_path = os.path.join(self.img_dir, 'step%.3d_%s_%s.png' % (epoch, label, im_name))
-            try:
-                util.save_image(image_numpy, img_path)
-            except:
-                import pdb; pdb.set_trace()
+        for  full_image in visuals.numpy():
+            for image in full_image.squeeze(0):
+                img_path = os.path.join(self.img_dir, 'step%.3d_%s.png' % (epoch, im_name))
+                try:
+                    util.save_image(image.astype(np.uint8), img_path)
+                except:
+                    import pdb; pdb.set_trace()
                 
         # log to tensorboard
         self.log_tensorboard_visuals(visuals, epoch, phase=phase)
@@ -116,21 +117,15 @@ class Visualizer():
         if labels_while_list is None:
             labels_while_list = []
 
-        for ix, (label, image_numpy) in enumerate(visuals.items()):
+        for ix, image_numpy in enumerate(visuals.numpy()):
             if image_numpy.shape[2] == 4:
                 image_numpy = image_numpy[:, :, :3]
-            
-            if label not in labels_while_list:
-                # writer.add_image('vis/%d-%s' % (ix+1, label), image_numpy, global_step=cur_step, dataformats='HWC')
-                writer.add_image('%s/%d-%s' % (phase, ix+1, label), image_numpy, global_step=cur_step, dataformats='HWC')
-            else:
-                pass
-                # log the unwanted image just in case
-                # writer.add_image('other/%s' % (label), image_numpy, global_step=cur_step, dataformats='HWC')
+            #writer.add_image('%s/%d' % (phase, ix+1), image_numpy, global_step=cur_step, dataformats='HWC')
+          
 
     def log_tensorboard_errors(self, errors, cur_step):
         writer = self.opt.writer
-
+        print(errors,"HERE???")
         for label, error in errors.items():
             writer.add_scalar('losses/%s' % label, error, cur_step)
 

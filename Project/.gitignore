@@ -169,4 +169,5 @@ sandbox.py
 raw_dataset/
 raw_dataset/MinimizedDataSet
 raw_dataset/*
+logs/*
 #.idea/

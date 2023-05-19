@@ -104,6 +104,7 @@ class PVQVAE(BaseModel):
         # import pdb; pdb.set_trace()
         x = input
         self.x = x
+        self.input = x
         self.cur_bs = x.shape[0]  # to handle last batch
 
         self.x_cubes = self.unfold_to_cubes(x, self.cube_size, self.stride)
@@ -152,9 +153,9 @@ class PVQVAE(BaseModel):
         x = self.x
         x_recon = self.x_recon
 
-        iou = iou(x, x_recon, thres)
+        iou_result = iou(x, x_recon, thres)
 
-        return iou
+        return iou_result
 
     def eval_metrics(self, dataloader, thres=0.0):
         self.eval()
@@ -217,10 +218,21 @@ class PVQVAE(BaseModel):
 
     #     return OrderedDict(visuals)
 
+    def get_current_errors(self):
+
+        ret = OrderedDict([
+            ('codebook', self.loss_codebook.data),
+            ('nll', self.loss_nll.data),
+            ('rec', self.loss_rec.data),
+            ('p', self.loss_p.data),
+        ])
+
+        return ret
+
     def save(self, label):
         save_filename = 'vqvae_%s.pth' % (label)
         save_path = os.path.join(self.save_dir, save_filename)
-        if len(self.gpu_ids) and torch.cuda.is_available():
+        if self.gpu_ids and len(self.gpu_ids) and torch.cuda.is_available():
             torch.save(self.vqvae.cpu().state_dict(), save_path)
             self.vqvae.cuda(self.gpu_ids[0])
         else:
