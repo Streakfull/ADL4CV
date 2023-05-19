@@ -107,9 +107,9 @@ class PVQVAE(BaseModel):
         self.cur_bs = x.shape[0]  # to handle last batch
 
         self.x_cubes = self.unfold_to_cubes(x, self.cube_size, self.stride)
-        # vars_list = ['x', 'x_cubes']
+        vars_list = ['x', 'x_cubes']
 
-        # self.tocuda(var_names=vars_list)
+        self.tocuda(var_names=vars_list)
 
     def forward(self):
         # qloss: codebook loss

@@ -202,7 +202,7 @@ class BaseModel():
 
     def tocuda(self, var_names):
         for name in var_names:
-            if isinstance(name, str):
+            if isinstance(name, str) and self.gpu_ids != None:
                 var = getattr(self, name)
                 setattr(self, name, var.cuda(
                     self.gpu_ids[0], non_blocking=True))
