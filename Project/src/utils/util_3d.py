@@ -14,37 +14,37 @@ import open3d as o3d
 
 import torch
 import torchvision.utils as vutils
-# import pytorch3d
-# from pytorch3d.structures import Pointclouds, Meshes
+import pytorch3d
+from pytorch3d.structures import Pointclouds, Meshes
 
-# from pytorch3d.renderer import (
-#     look_at_view_transform,
-#     FoVOrthographicCameras,
-#     PointsRasterizationSettings,
-#     PointsRenderer,
-#     PulsarPointsRenderer,
-#     PointsRasterizer,
-#     AlphaCompositor,
-#     NormWeightedCompositor
-# )
+from pytorch3d.renderer import (
+    look_at_view_transform,
+    FoVOrthographicCameras,
+    PointsRasterizationSettings,
+    PointsRenderer,
+    PulsarPointsRenderer,
+    PointsRasterizer,
+    AlphaCompositor,
+    NormWeightedCompositor
+)
 
-# from pytorch3d.renderer import (
-#     look_at_view_transform,
-#     FoVPerspectiveCameras,
-#     PointLights,
-#     DirectionalLights,
-#     Materials,
-#     RasterizationSettings,
-#     MeshRenderer,
-#     MeshRasterizer,
-#     SoftPhongShader,
-#     HardPhongShader,
-#     TexturesUV,
-#     TexturesVertex
-# )
+from pytorch3d.renderer import (
+    look_at_view_transform,
+    FoVPerspectiveCameras,
+    PointLights,
+    DirectionalLights,
+    Materials,
+    RasterizationSettings,
+    MeshRenderer,
+    MeshRasterizer,
+    SoftPhongShader,
+    HardPhongShader,
+    TexturesUV,
+    TexturesVertex
+)
 
-# from pytorch3d.transforms import RotateAxisAngle
-# from pytorch3d.structures import Meshes
+from pytorch3d.transforms import RotateAxisAngle
+from pytorch3d.structures import Meshes
 
 # macros
 from chamferdist import ChamferDistance
