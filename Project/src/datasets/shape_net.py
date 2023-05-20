@@ -16,7 +16,7 @@ class ShapenetDataset(Dataset):
             transform (Transform, optional): any transformation applied. Defaults to None.
             cat (str, optional): categories to retrieve all|chairs|tables .Defaults to "all".
         """
-        print(resolution,"RESOLUTION")
+
         self.shape_dir = shape_dir
         self.transform = transform
         self.resolution = resolution
