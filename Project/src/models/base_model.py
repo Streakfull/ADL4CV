@@ -4,14 +4,13 @@ import torch
 import utils.util as util
 
 
-
 def create_model(opt):
     model = None
 
     if opt.model == 'pvqvae':
         # vqvae
         from models.pvqvae_model import PVQVAEModel
-        model = PVQVAEModel()    
+        model = PVQVAEModel()
     elif opt.model == 'df':
         # diffusion
         from models.df_model import DiffusionModel
@@ -39,6 +38,8 @@ def create_model(opt):
     return model
 
 # modified from https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix
+
+
 class BaseModel():
     def name(self):
         return 'BaseModel'
@@ -46,7 +47,7 @@ class BaseModel():
     def initialize(self, opt):
         self.opt = opt
         self.gpu_ids = opt.gpu_ids
-        self.isTrain = opt.isTrain
+        self.isTrain = opt.is_train
         self.Tensor = torch.cuda.FloatTensor if self.gpu_ids else torch.Tensor
 
         if self.isTrain:
@@ -91,9 +92,9 @@ class BaseModel():
 
     def save_networks(self, model_names, epoch_labels):
 
-        assert(len(model_names) == len(epoch_labels))
+        assert (len(model_names) == len(epoch_labels))
 
-        for i,name in enumerate(model_names):
+        for i, name in enumerate(model_names):
             if isinstance(name, str):
                 net = getattr(self, 'net' + name)
                 save_filename = '%s_net_%s.pth' % (epoch_labels[i], name)
@@ -104,8 +105,8 @@ class BaseModel():
                 else:
                     torch.save(net.cpu().state_dict(), save_path)
 
-
     # # helper loading function that can be used by subclasses
+
     def load_network(self, network, network_label, ckpt_path):
         raise NotImplementedError
         opt = self.opt
@@ -118,16 +119,17 @@ class BaseModel():
             # save_file = f'%s/%s_net_%s.pth' % (prevWarpN_ckpt_dir, epoch_label, network_label)
             ckpt_latest = ckpt_path.replace(epoch_label, 'epoch-latest')
             if not os.path.exists(ckpt_latest):
-                import pdb; pdb.set_trace()
+                import pdb
+                pdb.set_trace()
             ckpt_path = ckpt_latest
         network.load_state_dict(torch.load(ckpt_path))
         print(colored(f'[*] Network loaded from: {ckpt_path}. Done.', 'blue'))
 
-
     # helper loading function that can be used by subclasses
+
     def load_networks(self):
-        assert(len(self.model_names) == len(self.epoch_labels))
-        for i,name in enumerate(self.model_names):
+        assert (len(self.model_names) == len(self.epoch_labels))
+        for i, name in enumerate(self.model_names):
             if isinstance(name, str):
                 net = getattr(self, 'net' + name)
                 save_filename = '%s_net_%s.pth' % (self.epoch_labels[i], name)
@@ -141,14 +143,14 @@ class BaseModel():
             if isinstance(name, str):
                 net = getattr(self, 'net' + name)
 
-                ## ttur
+                # ttur
                 if 'D_' in name or 'D1_' in name or 'D2_' in name:
                     lr = D_lr
                 else:
                     lr = G_lr
                 setattr(self, 'optimizer_' + name, torch.optim.Adam(net.parameters(),
-                                                lr=lr, betas=(self.opt.beta1, 0.999)))
-                                                # lr=self.opt.lr, betas=(self.opt.beta1, 0.999)))
+                                                                    lr=lr, betas=(self.opt.beta1, 0.999)))
+                # lr=self.opt.lr, betas=(self.opt.beta1, 0.999)))
                 self.optimizers.append(getattr(self, 'optimizer_' + name))
 
     def set_requires_grad(self, nets, requires_grad=False):
@@ -194,15 +196,16 @@ class BaseModel():
                     num_params += param.numel()
                 if verbose:
                     print(net)
-                print('[Network %s] Total number of parameters : %.3f M' % (name, num_params / 1e6))
+                print('[Network %s] Total number of parameters : %.3f M' %
+                      (name, num_params / 1e6))
         print('-----------------------------------------------')
 
     def tocuda(self, var_names):
         for name in var_names:
-            if isinstance(name, str):
+            if isinstance(name, str) and torch.cuda.is_available():
                 var = getattr(self, name)
-                setattr(self, name, var.cuda(self.gpu_ids[0], non_blocking=True))
-
+                setattr(self, name, var.cuda(
+                    0, non_blocking=True))
 
     def tnsrs2ims(self, tensor_names):
         ims = []

@@ -18,6 +18,8 @@ import logging
 
 # Converts a Tensor into a Numpy array
 # |imtype|: the desired type of the converted numpy array
+
+
 def tensor2im(image_tensor, imtype=np.uint8):
     # image_numpy = image_tensor[0].cpu().float().numpy()
     # if image_numpy.shape[0] == 1:
@@ -34,11 +36,12 @@ def tensor2im(image_tensor, imtype=np.uint8):
     # if image_tensor.shape[1] == 4:
         # import pdb; pdb.set_trace()
 
-    image_tensor = vutils.make_grid( image_tensor, nrow=4 )
+    image_tensor = vutils.make_grid(image_tensor, nrow=4)
 
     image_numpy = image_tensor.cpu().float().numpy()
-    image_numpy = ( np.transpose( image_numpy, (1, 2, 0) ) + 1) / 2.0 * 255.
+    image_numpy = (np.transpose(image_numpy, (1, 2, 0)) + 1) / 2.0 * 255.
     return image_numpy.astype(imtype)
+
 
 def to_variable(numpy_data, volatile=False):
     numpy_data = numpy_data.astype(np.float32)
@@ -46,10 +49,12 @@ def to_variable(numpy_data, volatile=False):
     variable = Variable(torch_data, volatile=volatile)
     return variable
 
+
 def get_logger(name, log_dir=None):
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('[%(asctime)s::%(name)s::%(levelname)s] %(message)s')
+    formatter = logging.Formatter(
+        '[%(asctime)s::%(name)s::%(levelname)s] %(message)s')
 
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(logging.DEBUG)
@@ -64,6 +69,7 @@ def get_logger(name, log_dir=None):
 
     return logger
 
+
 def instantiate_from_config(config):
     if config is None:
         return None
@@ -73,10 +79,12 @@ def instantiate_from_config(config):
     cls = getattr(importlib.import_module(module, package=None), cls)
     return cls(**config.get("params", dict()))
 
+
 def load_yaml_config(path):
     with open(path) as f:
         config = yaml.full_load(f)
     return config
+
 
 def diagnose_network(net, name='network'):
     mean = 0.0
@@ -118,8 +126,9 @@ def mkdir(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
+
 def seed_everything(seed):
-    
+
     random.seed(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
     np.random.seed(seed)
@@ -127,7 +136,7 @@ def seed_everything(seed):
     torch.cuda.manual_seed(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = True
-    
+
 
 def iou(x_gt, x, thres):
     thres_gt = 0.0
@@ -177,20 +186,25 @@ def rand_brightness(x):
 
 def rand_saturation(x):
     x_mean = x.mean(dim=1, keepdim=True)
-    x = (x - x_mean) * (torch.rand(x.size(0), 1, 1, 1, dtype=x.dtype, device=x.device) * 2) + x_mean
+    x = (x - x_mean) * (torch.rand(x.size(0), 1, 1, 1,
+                                   dtype=x.dtype, device=x.device) * 2) + x_mean
     return x
 
 
 def rand_contrast(x):
     x_mean = x.mean(dim=[1, 2, 3], keepdim=True)
-    x = (x - x_mean) * (torch.rand(x.size(0), 1, 1, 1, dtype=x.dtype, device=x.device) + 0.5) + x_mean
+    x = (x - x_mean) * (torch.rand(x.size(0), 1, 1, 1,
+                                   dtype=x.dtype, device=x.device) + 0.5) + x_mean
     return x
 
 
 def rand_translation(x, ratio=0.125):
-    shift_x, shift_y = int(x.size(2) * ratio + 0.5), int(x.size(3) * ratio + 0.5)
-    translation_x = torch.randint(-shift_x, shift_x + 1, size=[x.size(0), 1, 1], device=x.device)
-    translation_y = torch.randint(-shift_y, shift_y + 1, size=[x.size(0), 1, 1], device=x.device)
+    shift_x, shift_y = int(x.size(2) * ratio +
+                           0.5), int(x.size(3) * ratio + 0.5)
+    translation_x = torch.randint(-shift_x, shift_x + 1,
+                                  size=[x.size(0), 1, 1], device=x.device)
+    translation_y = torch.randint(-shift_y, shift_y + 1,
+                                  size=[x.size(0), 1, 1], device=x.device)
     grid_batch, grid_x, grid_y = torch.meshgrid(
         torch.arange(x.size(0), dtype=torch.long, device=x.device),
         torch.arange(x.size(2), dtype=torch.long, device=x.device),
@@ -199,22 +213,28 @@ def rand_translation(x, ratio=0.125):
     grid_x = torch.clamp(grid_x + translation_x + 1, 0, x.size(2) + 1)
     grid_y = torch.clamp(grid_y + translation_y + 1, 0, x.size(3) + 1)
     x_pad = F.pad(x, [1, 1, 1, 1, 0, 0, 0, 0])
-    x = x_pad.permute(0, 2, 3, 1).contiguous()[grid_batch, grid_x, grid_y].permute(0, 3, 1, 2).contiguous()
+    x = x_pad.permute(0, 2, 3, 1).contiguous()[
+        grid_batch, grid_x, grid_y].permute(0, 3, 1, 2).contiguous()
     return x
 
 
 def rand_cutout(x, ratio=0.5):
     cutout_size = int(x.size(2) * ratio + 0.5), int(x.size(3) * ratio + 0.5)
-    offset_x = torch.randint(0, x.size(2) + (1 - cutout_size[0] % 2), size=[x.size(0), 1, 1], device=x.device)
-    offset_y = torch.randint(0, x.size(3) + (1 - cutout_size[1] % 2), size=[x.size(0), 1, 1], device=x.device)
+    offset_x = torch.randint(0, x.size(
+        2) + (1 - cutout_size[0] % 2), size=[x.size(0), 1, 1], device=x.device)
+    offset_y = torch.randint(0, x.size(
+        3) + (1 - cutout_size[1] % 2), size=[x.size(0), 1, 1], device=x.device)
     grid_batch, grid_x, grid_y = torch.meshgrid(
         torch.arange(x.size(0), dtype=torch.long, device=x.device),
         torch.arange(cutout_size[0], dtype=torch.long, device=x.device),
         torch.arange(cutout_size[1], dtype=torch.long, device=x.device),
     )
-    grid_x = torch.clamp(grid_x + offset_x - cutout_size[0] // 2, min=0, max=x.size(2) - 1)
-    grid_y = torch.clamp(grid_y + offset_y - cutout_size[1] // 2, min=0, max=x.size(3) - 1)
-    mask = torch.ones(x.size(0), x.size(2), x.size(3), dtype=x.dtype, device=x.device)
+    grid_x = torch.clamp(grid_x + offset_x -
+                         cutout_size[0] // 2, min=0, max=x.size(2) - 1)
+    grid_y = torch.clamp(grid_y + offset_y -
+                         cutout_size[1] // 2, min=0, max=x.size(3) - 1)
+    mask = torch.ones(x.size(0), x.size(2), x.size(3),
+                      dtype=x.dtype, device=x.device)
     mask[grid_batch, grid_x, grid_y] = 0
     x = x * mask.unsqueeze(1)
     return x
@@ -228,13 +248,47 @@ AUGMENT_FNS = {
 
 # Noam Learning rate schedule.
 # From https://github.com/tugstugi/pytorch-saltnet/blob/master/utils/lr_scheduler.py
-class NoamLR(_LRScheduler):
-	
-	def __init__(self, optimizer, warmup_steps):
-		self.warmup_steps = warmup_steps
-		super().__init__(optimizer)
 
-	def get_lr(self):
-		last_epoch = max(1, self.last_epoch)
-		scale = self.warmup_steps ** 0.5 * min(last_epoch ** (-0.5), last_epoch * self.warmup_steps ** (-1.5))
-		return [base_lr * scale for base_lr in self.base_lrs]
+
+class NoamLR(_LRScheduler):
+
+    def __init__(self, optimizer, warmup_steps):
+        self.warmup_steps = warmup_steps
+        super().__init__(optimizer)
+
+    def get_lr(self):
+        last_epoch = max(1, self.last_epoch)
+        scale = self.warmup_steps ** 0.5 * \
+            min(last_epoch ** (-0.5), last_epoch * self.warmup_steps ** (-1.5))
+        return [base_lr * scale for base_lr in self.base_lrs]
+
+
+def render_sdf(mesh_renderer, sdf, level=0.02, color=None, render_imsize=256, render_all=False):
+    """ 
+        shape of sdf:
+        - bs, 1, nC, nC, nC 
+
+        return a tensor of image rendered according to self.renderer
+        shape of image:
+        - bs, rendered_imsize, rendered_imsize, 4
+
+        ref: https://github.com/shubhtuls/PixelTransformer/blob/03b65b8612fe583b3e35fc82b446b5503dd7b6bd/data/base_3d.py
+    """
+    # device='cuda'
+    device = sdf.device
+    bs = sdf.shape[0]
+
+    if not render_all:
+        nimg_to_render = min(bs, 16)  # no need to render that much..
+
+    p3d_mesh = sdf_to_mesh(sdf, level=level, color=color,
+                           render_all=render_all)
+
+    if p3d_mesh is not None:
+        rendered_im = einops.rearrange(mesh_renderer(
+            p3d_mesh), 'b h w c-> b c h w').contiguous()  # bs, h, w, c
+    else:
+        rendered_im = torch.zeros(
+            nimg_to_render, 4, render_imsize, render_imsize).to(device)
+
+    return rendered_im

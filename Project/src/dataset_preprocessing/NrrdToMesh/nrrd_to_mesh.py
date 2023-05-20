@@ -2,8 +2,8 @@
 import sys  # noqadefined
 import os  # noqa
 sys.path.append(os.path.abspath(os.path.join('..', '')))  # noqa
-from utils import read_nrrd, export_mesh_to_obj
-from constants import NRRD_EXTENSION, OBJ_EXTENTION, DEMO_ARGUMENT, DATA_SET_PATH, TEMP_PATH, ERRORS_PATH
+from utils import read_nrrd, export_mesh_to_obj,construct_full_obj_file_path
+from constants import NRRD_EXTENSION, OBJ_EXTENSION, DEMO_ARGUMENT, DATA_SET_PATH, TEMP_PATH, ERRORS_PATH
 import skimage.measure as measure
 import numpy as np
 import tqdm
@@ -26,27 +26,13 @@ def nrrd_to_mesh(file_name):
     try:
         vertices, faces, _, _ = measure.marching_cubes(
             binary_mask, allow_degenerate=True)
-        new_file_name = file_name.replace(NRRD_EXTENSION, OBJ_EXTENTION)
+        new_file_name = file_name.replace(NRRD_EXTENSION, OBJ_EXTENSION)
         export_mesh_to_obj(new_file_name, vertices, faces)
     except:
         with open(ERRORS_PATH, "w") as file:
-            print("ERROR?")
             file.write(file_name)
             file.write('\n')
 
-
-def construct_full_nrrd_file_path(folder_name):
-    """ Constructs the full path to the nrrd file from the folder
-        name in the dataset
-
-    Args:
-        file_name: Folder name of the NRRD file relative to the dataset path.
-
-    Returns:
-        None
-
-"""
-    return f"{DATA_SET_PATH}/{folder_name}/{folder_name}{NRRD_EXTENSION}"
 
 
 def convert_data_set_to_mesh():
@@ -61,7 +47,7 @@ def convert_data_set_to_mesh():
     with open(TEMP_PATH, "w") as file:
         for index in tqdm.tqdm(range(0, len(directories))):
             directory_name = directories[index]
-            file_name = construct_full_nrrd_file_path(directory_name)
+            file_name = construct_full_obj_file_path(directory_name, NRRD_EXTENSION)
             nrrd_to_mesh(file_name)
             file.write(directory_name)
             file.write('\n')

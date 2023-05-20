@@ -14,6 +14,7 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 
+
 def parse_line(line):
     info_d = {}
 
@@ -26,10 +27,9 @@ def parse_line(line):
 
     info_d = {}
     for s in l1:
-        
+
         k, v = s.split(': ')
-        
-        
+
         if k in ['epoch', 'iters']:
             info_d[k] = int(v)
         else:
@@ -37,9 +37,9 @@ def parse_line(line):
 
     l2_keys = l2[0::2]
     l2_vals = l2[1::2]
-    
+
     for k, v in zip(l2_keys, l2_vals):
-        k = k.replace(':','')
+        k = k.replace(':', '')
         info_d[k] = float(v)
 
     return info_d
@@ -48,7 +48,7 @@ def parse_line(line):
 class Visualizer():
     def __init__(self, opt):
         # self.opt = opt
-        self.isTrain = opt.isTrain
+        self.isTrain = opt.is_train
         self.gif_fps = 4
 
         if self.isTrain:
@@ -61,7 +61,8 @@ class Visualizer():
         self.opt = opt
 
         self.img_dir = os.path.join(self.log_dir, 'images')
-        print('[*] create image directory:\n%s...' % os.path.abspath(self.img_dir) )
+        print('[*] create image directory:\n%s...' %
+              os.path.abspath(self.img_dir))
         util.mkdirs([self.img_dir])
         # self.log_name = os.path.join(opt.checkpoints_dir, opt.name, 'loss_log.txt')
 
@@ -70,13 +71,15 @@ class Visualizer():
             # with open(self.log_name, "a") as log_file:
             with open(self.log_name, "w") as log_file:
                 now = time.strftime("%c")
-                log_file.write('================ Training Loss (%s) ================\n' % now)
+                log_file.write(
+                    '================ Training Loss (%s) ================\n' % now)
 
     def reset(self):
         self.saved = False
 
     def print_current_errors(self, epoch, epoch_iters, total_iters, errors, t):
-        message = '(GPU: %s, epoch: %d, iters: %d, time: %.3f) ' % (self.opt.gpu_ids_str, epoch, epoch_iters, t)
+        message = '(GPU: %s, epoch: %d, iters: %d, time: %.3f) ' % (
+            self.opt.gpu_ids_str, epoch, epoch_iters, t)
         for k, v in errors.items():
             message += '%s: %.6f ' % (k, v)
 
@@ -87,7 +90,8 @@ class Visualizer():
         self.log_tensorboard_errors(errors, total_iters)
 
     def print_current_metrics(self, epoch, metrics, phase):
-        message = '([%s] GPU: %s, epoch: %d) ' % (phase, self.opt.gpu_ids_str, epoch)
+        message = '([%s] GPU: %s, epoch: %d) ' % (
+            phase, self.opt.gpu_ids_str, epoch)
         for k, v in metrics.items():
             message += '%s: %.3f ' % (k, v)
 
@@ -98,15 +102,17 @@ class Visualizer():
         self.log_tensorboard_metrics(metrics, epoch, phase)
 
     def display_current_results(self, visuals, epoch, im_name='', phase='train'):
-        
+
         # write images to disk
         for label, image_numpy in visuals.items():
-            img_path = os.path.join(self.img_dir, 'step%.3d_%s_%s.png' % (epoch, label, im_name))
+            img_path = os.path.join(
+                self.img_dir, 'step%.3d_%s_%s.png' % (epoch, label, im_name))
             try:
                 util.save_image(image_numpy, img_path)
             except:
-                import pdb; pdb.set_trace()
-                
+                import pdb
+                pdb.set_trace()
+
         # log to tensorboard
         self.log_tensorboard_visuals(visuals, epoch, phase=phase)
 
@@ -119,10 +125,11 @@ class Visualizer():
         for ix, (label, image_numpy) in enumerate(visuals.items()):
             if image_numpy.shape[2] == 4:
                 image_numpy = image_numpy[:, :, :3]
-            
+
             if label not in labels_while_list:
                 # writer.add_image('vis/%d-%s' % (ix+1, label), image_numpy, global_step=cur_step, dataformats='HWC')
-                writer.add_image('%s/%d-%s' % (phase, ix+1, label), image_numpy, global_step=cur_step, dataformats='HWC')
+                writer.add_image('%s/%d-%s' % (phase, ix+1, label),
+                                 image_numpy, global_step=cur_step, dataformats='HWC')
             else:
                 pass
                 # log the unwanted image just in case
@@ -138,4 +145,5 @@ class Visualizer():
         writer = self.opt.writer
 
         for label, value in metrics.items():
-            writer.add_scalar('metrics/%s-%s' % (phase, label), value, cur_step)
+            writer.add_scalar('metrics/%s-%s' %
+                              (phase, label), value, cur_step)
