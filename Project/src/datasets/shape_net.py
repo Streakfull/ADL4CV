@@ -16,6 +16,7 @@ class ShapenetDataset(Dataset):
             transform (Transform, optional): any transformation applied. Defaults to None.
             cat (str, optional): categories to retrieve all|chairs|tables .Defaults to "all".
         """
+        print(resolution,"RESOLUTION")
         self.shape_dir = shape_dir
         self.transform = transform
         self.resolution = resolution
@@ -32,7 +33,7 @@ class ShapenetDataset(Dataset):
     def get_directory_ids(self):
         if (self.cat == "all"):
             return os.listdir(self.shape_dir)
-        directory_name = f"{self.full_data_set_dir}/{self.cat}/parsed_trees"
+        directory_name = f"{self.full_data_set_dir}/{self.cat}"
         return os.listdir(directory_name)
 
     def full_file_path(self, shape_id):
@@ -44,7 +45,7 @@ class ShapenetDataset(Dataset):
         Returns:
             string: full folder path relative to current working directory
         """
-        filename = f"{self.shape_dir}/{shape_id}/{shape_id}{SDF_SUFFIX}{SDF_EXTENSION}"
+        filename = f"{self.shape_dir}/{self.cat}/{shape_id}/ori_sample{SDF_EXTENSION}"
         return filename
 
     def __getitem__(self, idx):

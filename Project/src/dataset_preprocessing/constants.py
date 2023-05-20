@@ -1,6 +1,6 @@
 # DATA_SET_PATH = "../../RawDataSet/nrrd_256_filter_div_32_solid"
-DATA_SET_PATH = "raw_dataset/MinimizedDataSet/res_128_sdf"
-FULL_DATA_SET_PATH = "raw_dataset/MinimizedDataSet"
+DATA_SET_PATH = "raw_dataset"
+FULL_DATA_SET_PATH = "raw_dataset"
 NRRD_EXTENSION = ".nrrd"
 OBJ_EXTENSION = ".obj"
 PNG_EXTENSION = ".png"
