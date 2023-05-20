@@ -11,7 +11,7 @@ from models.pvqvae_networks.losses import VQLoss
 import os
 from torch import optim
 from termcolor import colored
-# from utils.util_3d import render_sdf
+from utils.util_3d import render_sdf
 
 
 class PVQVAE(BaseModel):
@@ -206,21 +206,21 @@ class PVQVAE(BaseModel):
 
     def get_current_visuals(self):
 
-        # with torch.no_grad():
-        #     self.image = render_sdf(self.renderer, self.x)
-        #     self.image_recon = render_sdf(self.renderer, self.x_recon)
+        with torch.no_grad():
+            self.image = render_sdf(self.renderer, self.x)
+            self.image_recon = render_sdf(self.renderer, self.x_recon)
 
-        # vis_tensor_names = [
-        #     'image',
-        #     'image_recon',
-        # ]
+        vis_tensor_names = [
+            'image',
+            'image_recon',
+        ]
 
-        # vis_ims = self.tnsrs2ims(vis_tensor_names)
-        # # vis_tensor_names = ['%s/%s' % (phase, n) for n in vis_tensor_names]
-        # visuals = zip(vis_tensor_names, vis_ims)
+        vis_ims = self.tnsrs2ims(vis_tensor_names)
+        # vis_tensor_names = ['%s/%s' % (phase, n) for n in vis_tensor_names]
+        visuals = zip(vis_tensor_names, vis_ims)
 
-        # return OrderedDict(visuals)
-        return OrderedDict()
+        return OrderedDict(visuals)
+        #return OrderedDict()
 
     def get_current_errors(self):
 
