@@ -46,7 +46,7 @@ shapenet = ShapenetDataset(shape_dir, full_dataset_path,
 train_ds, test_ds = torch.utils.data.random_split(
     shapenet, [0.8, 0.2])
 vq_cfg = root_folder/'configs/pvqae_configs.yaml'
-options = BaseOptions(config_path=vq_cfg, name="pvqae-2",
+options = BaseOptions(config_path=vq_cfg, name="pvqae-4",
                       n_epochs=4, nepochs_decay=4)
 
 train_dl = DataLoader(train_ds, batch_size=options.batch_size, shuffle=False, sampler=None,

@@ -48,7 +48,7 @@ def parse_line(line):
 class Visualizer():
     def __init__(self, opt):
         # self.opt = opt
-        self.isTrain = opt.isTrain
+        self.isTrain = opt.is_train
         self.gif_fps = 4
 
         if self.isTrain:
