@@ -48,7 +48,7 @@ train_ds, test_ds = torch.utils.data.random_split(
 vq_cfg = f"{root_folder}/configs/pvqae_configs.yaml"
 options = BaseOptions(config_path=vq_cfg, name="pvqae-6",
                       batch_size=4,
-                      n_epochs=30, nepochs_decay=5)
+                      n_epochs=10, nepochs_decay=3)
 
 train_dl = DataLoader(train_ds, batch_size=options.batch_size, shuffle=False, sampler=None,
                       batch_sampler=None, num_workers=0, collate_fn=None,
