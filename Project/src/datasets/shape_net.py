@@ -6,7 +6,7 @@ from dataset_preprocessing.constants import SDF_EXTENSION, SDF_SUFFIX
 
 
 class ShapenetDataset(Dataset):
-    def __init__(self, shape_dir, full_data_set_dir, resolution=64, transform=None, cat="all", max_dataset_size=None):
+    def __init__(self, shape_dir, full_data_set_dir, resolution=64, transform=None, cat="all", max_dataset_size=None, trunc_thres=0.2):
         """Initializes the shape dataset class 
 
         Args:
@@ -22,6 +22,7 @@ class ShapenetDataset(Dataset):
         self.resolution = resolution
         self.cat = cat
         self.full_data_set_dir = full_data_set_dir
+        self.trunc_thresh = trunc_thres
         self.shapes = self.get_directory_ids()
         self.max_dataset_size = max_dataset_size
         if (max_dataset_size):
@@ -52,7 +53,14 @@ class ShapenetDataset(Dataset):
         shape_id = self.shapes[idx]
         filename = self.full_file_path(shape_id)
         sdf_grid = read_sdf(filename, self.resolution)
+        sdf_grid = torch.Tensor(sdf_grid)
         if self.transform:
             sdf_grid = self.transform(sdf_grid)
-        sdf_grid = torch.Tensor(sdf_grid)
+
+        thres = self.trunc_thres
+        if thres != 0.0:
+            sdf_grid = torch.clamp(sdf_grid, min=-thres, max=thres)
         return sdf_grid.view(1, self.resolution, self.resolution, self.resolution)
+
+    def name(self):
+        return 'SDFDataset'

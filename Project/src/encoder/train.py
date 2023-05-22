@@ -36,13 +36,12 @@ seed = 512
 util.seed_everything(seed)
 
 cwd = Path.cwd()
-print(cwd, "CWD")
 root_folder = ".."
 shape_dir = f"{root_folder}/{DATA_SET_PATH}"
 full_dataset_path = f"{root_folder}/{FULL_DATA_SET_PATH}"
 
 shapenet = ShapenetDataset(shape_dir, full_dataset_path,
-                           resolution=64, cat="chairs")
+                           resolution=64, cat="chairs", trunc_thres=0.2)
 train_ds, test_ds = torch.utils.data.random_split(
     shapenet, [0.8, 0.2])
 vq_cfg = f"{root_folder}/configs/pvqae_configs.yaml"
