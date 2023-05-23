@@ -51,7 +51,15 @@ class ShapenetDataset(Dataset):
 
     def get_z_shape(self, shape_id):
         filename = f"{self.shape_dir}/{self.cat}/{shape_id}/z_shape.pth"
-        return torch.load(filename)
+        try:
+            tensor = torch.load(filename)
+            return tensor
+        except:
+            print("Not Found", shape_id)
+            zeros = torch.zeros(
+                (self.resolution, self.resolution, self.resolution, 256))
+            zeros[:, :, :, 0] = 1
+            return zeros
 
     def get_item_by_id(self, shape_id):
         """Directly gets the truncated sdf grid of a shape from its id
