@@ -42,6 +42,14 @@ codebook_indices = model.n_embed
 
 
 def save_tensor(input, shape_id, is_shape_set=False, shape_set_row_index=0):
+    """Saves z-shape or z-set(by row index)
+
+    Args:
+        input tensor: Tensor to be saved
+        shape_id string: Shape id or incase of a shape set the reference shape id
+        is_shape_set (bool, optional): Indicates if this is a shape set. Defaults to False.
+        shape_set_row_index (int, optional): Shape set row index from the dataset csv. Defaults to 0.
+    """
     file_path = f"{dataset_path}/{cat}/{shape_id}/z_shape.pt"
     # file_path = f"{dataset_path}/z_shape.pt"
     if is_shape_set:
@@ -51,16 +59,27 @@ def save_tensor(input, shape_id, is_shape_set=False, shape_set_row_index=0):
 
 
 def save_stats_dict():
+    """Saves the stats that has all relevant info about the process in the dataset path
+    """
     with open(f"{dataset_path}/stats.json", 'w') as f:
         # Write the dictionary to the file in JSON format
         json.dump(stats, f)
 
 
 def handle_shape(shape_id, shape_sdf):
+    """ Converts a shape sdf to be a g^3 x n_embed probability distribution over the codebook indices
+
+    Args:
+        shape_id string: Shape id
+        shape_sdf tensor[1,resolution,resolution,resolution]: sdf grid of the shape
+    Saves:
+        z tensor[ncubes_per_dim,ncubes_per_dim,ncubes_per_dim,n_embed ]: probability distribution over all possible codebook indices
+    """
     is_shape_id_done = stats["shapes_dict"].get(shape_id, False)
     if (is_shape_id_done):
         return
     # 8 * 8 * 8
+    # Unsequeezed since the model expects a batch dimension
     indices = model.encode_indices(shape_sdf.unsqueeze(0)).squeeze(0)
     # One hot encode
     z = functional.one_hot(indices, num_classes=codebook_indices)
@@ -69,10 +88,18 @@ def handle_shape(shape_id, shape_sdf):
     stats["shapes_counter"] += 1
 
 
-def handle_shape_set(scores, shape_id, shape_set_sdfs, shape_set_indices):
-    if (len(shape_set_sdfs) == 0):
+def handle_shape_set(scores, shape_id, shape_sets, shape_sets_indices):
+    """ Converts each shape set to be a g^3 x n_embed probability distribution over the codebook indices
+
+    Args:
+        scores [tensor int[]]: A list of similarity scores for each shape in each shapeset
+        shape_id string: Reference shape id
+        shape_sets tensor[1,resolution,resolution,resolution][][]: 2D list of sdf tensors for each shape in each shapeset 
+        shape_sets_indices int[]: Row index of each shape set
+    """
+    if (len(shape_sets) == 0):
         return
-    for i, shape_set in enumerate(shape_set_sdfs):
+    for i, shape_set in enumerate(shape_sets):
         indices = model.encode_indices(shape_set)
         z_set = functional.one_hot(indices, num_classes=codebook_indices)
         # broadcasting for valid multiplication
@@ -86,18 +113,18 @@ def handle_shape_set(scores, shape_id, shape_set_sdfs, shape_set_indices):
         assert torch.all(torch.isclose(
             torch.tensor(1.), torch.sum(z_set, axis=-1)))
         save_tensor(z_set, shape_id, is_shape_set=True,
-                    shape_set_row_index=shape_set_indices[i])
+                    shape_set_row_index=shape_sets_indices[i])
         stats["shape_set_counter"] += 1
 
 
 for i in tqdm(range(len(dataset))):
     element = dataset[i]
     shape_sdf = element["shape_sdf"]
-    shape_set_sdfs = element["shape_set_sdfs"]
+    shape_sets = element["shape_set_sdfs"]
     shape_set_ids = element["shape_set"]
     scores = element["shape_set_scores"]
     shape_id = element["shape_id"]
-    shape_set_indices = element["shape_set_indices"]
+    shape_sets_indices = element["shape_set_indices"]
     handle_shape(shape_id, shape_sdf)
     # handle_shape_set(scores, shape_id, shape_set_sdfs, shape_set_indices)
 save_stats_dict()
