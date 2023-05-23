@@ -19,6 +19,7 @@ root = ".."
 dataset_path = f"{root}/{DATA_SET_PATH}"
 text2Shape_dataset_path = f"{root}/{TEXT2SHAPE_DATA_SET_PATH}"
 cat = "chairs"
+shapeset_length_threshold = 20
 
 dataset = LatentCodeExtractor(
     text2Shape_dataset_path, dataset_path, cat=cat, resolution=32)
@@ -88,6 +89,17 @@ def handle_shape(shape_id, shape_sdf):
     stats["shapes_counter"] += 1
 
 
+def handle_shape_set_sequentially(shape_set, scores):
+    z_set = torch.zeros((model.ncubes_per_dim, model.ncubes_per_dim,
+                        model.ncubes_per_dim, codebook_indices))
+    for i, shape in enumerate(shape_set):
+        indices = model.encode_indices(shape.unsqueeze(0)).squeeze(0)
+        z_shape = functional.one_hot(
+            indices, num_classes=codebook_indices) * scores[i]
+        z_set += z_shape
+    z_set = z_set / torch.sum(scores)
+
+
 def handle_shape_set(scores, shape_id, shape_sets, shape_sets_indices):
     """ Converts each shape set to be a g^3 x n_embed probability distribution over the codebook indices
 
@@ -100,15 +112,19 @@ def handle_shape_set(scores, shape_id, shape_sets, shape_sets_indices):
     if (len(shape_sets) == 0):
         return
     for i, shape_set in enumerate(shape_sets):
-        indices = model.encode_indices(shape_set)
-        z_set = functional.one_hot(indices, num_classes=codebook_indices)
-        # broadcasting for valid multiplication
-        shape_set_scores = scores[i].reshape(
-            shape_set.shape[0], 1, 1, 1, 1).to(device)
-        total_score = torch.sum(shape_set_scores).to(device)
-        # apply weighter average
-        z_set = (z_set * shape_set_scores) / total_score
-        z_set = torch.sum(z_set, axis=0)
+        shapes_length = shape_set.size()[0]
+        if (shapes_length > shapeset_length_threshold):
+            z_set = handle_shape_set_sequentially(shape_set, scores=[i])
+        else:
+            indices = model.encode_indices(shape_set)
+            z_set = functional.one_hot(indices, num_classes=codebook_indices)
+            # broadcasting for valid multiplication
+            shape_set_scores = scores[i].reshape(
+                shape_set.shape[0], 1, 1, 1, 1).to(device)
+            total_score = torch.sum(shape_set_scores).to(device)
+            # apply weighted average
+            z_set = (z_set * shape_set_scores) / total_score
+            z_set = torch.sum(z_set, axis=0)
         # Making sure it is a valid probability distribution
         assert torch.all(torch.isclose(
             torch.tensor(1.), torch.sum(z_set, axis=-1)))
