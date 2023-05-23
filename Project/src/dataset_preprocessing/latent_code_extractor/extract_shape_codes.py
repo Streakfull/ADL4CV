@@ -23,7 +23,7 @@ cat = "chairs"
 shapeset_length_threshold = 10
 
 dataset = LatentCodeExtractor(
-    text2Shape_dataset_path, dataset_path, cat=cat, resolution=64)
+    text2Shape_dataset_path, dataset_path, cat=cat, resolution=64, load_similar_shapes=False)
 
 
 vq_cfg = f"{root}/configs/pvqae_configs.yaml"
@@ -39,7 +39,7 @@ stats = {
     "shapes_dict": {},
     "shapes_counter": 0,
     "shape_set_counter": 0,
-    "row_indices":{}
+    "row_indices": {}
 }
 codebook_indices = model.n_embed
 
@@ -95,10 +95,7 @@ def handle_shape_set_sequentially(shape_set, scores):
     z_set = torch.zeros((model.ncubes_per_dim, model.ncubes_per_dim,
                         model.ncubes_per_dim, codebook_indices)).to(device)
     for i, shape in enumerate(shape_set):
-        indices = model.encode_indices(shape.unsqueeze(0)).squeeze(0)
-        z_shape = functional.one_hot(
-            indices, num_classes=codebook_indices) * scores[i]
-        z_set += z_shape
+        z_set += shape * scores[i]
     z_set = z_set / torch.sum(scores)
     print(colored(f'[*] Shape set done', 'yellow'))
     return z_set
@@ -121,9 +118,10 @@ def handle_shape_set(scores, shape_id, shape_sets, shape_sets_indices):
         if (shapes_length > shapeset_length_threshold):
             z_set = handle_shape_set_sequentially(shape_set, scores=scores[i])
         else:
-            indices = model.encode_indices(shape_set)
-            z_set = functional.one_hot(indices, num_classes=codebook_indices)
+            # indices = model.encode_indices(shape_set)
+            # z_set = functional.one_hot(indices, num_classes=codebook_indices)
             # broadcasting for valid multiplication
+            z_set = torch.tensor(shape_set).to(device)
             shape_set_scores = scores[i].reshape(
                 shape_set.shape[0], 1, 1, 1, 1).to(device)
             total_score = torch.sum(shape_set_scores).to(device)
@@ -136,19 +134,19 @@ def handle_shape_set(scores, shape_id, shape_sets, shape_sets_indices):
         save_tensor(z_set, shape_id, is_shape_set=True,
                     shape_set_row_index=shape_sets_indices[i])
         stats["shape_set_counter"] += 1
-        stats["row_indices"][shape_sets_indices[i]] = True 
+        stats["row_indices"][shape_sets_indices[i]] = True
 
 
 for i in tqdm(range(len(dataset))):
     element = dataset[i]
     shape_sdf = element["shape_sdf"]
-    shape_sets = element["shape_sets_sdfs"]
+    shape_sets = element["shape_sets_z"]
     shape_set_ids = element["shape_sets"]
     scores = element["shape_sets_scores"]
     shape_id = element["shape_id"]
     shape_sets_indices = element["shape_sets_indices"]
 
-    handle_shape(shape_id, shape_sdf)
+   # handle_shape(shape_id, shape_sdf)
     print(colored(f'[*]{shape_id} done', 'blue'))
     handle_shape_set(scores, shape_id, shape_sets, shape_sets_indices)
     print(colored(f'[*]{shape_id} shapeset done', 'blue'))

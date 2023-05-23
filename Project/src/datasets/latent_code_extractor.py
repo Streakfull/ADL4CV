@@ -8,7 +8,7 @@ from torch.nn.utils.rnn import pad_sequence
 
 class LatentCodeExtractor(Dataset):
 
-    def __init__(self, text2Shape_dir, shape_dir, csv_file_name="similar_phrase_2.csv",  cat="chairs", resolution=64):
+    def __init__(self, text2Shape_dir, shape_dir, csv_file_name="similar_phrase_2.csv",  cat="chairs", resolution=64, load_similar_shapes=False):
         """Dataset class for latent code extractor. This is NOT is the data set class to be used for training
            No phrases/texts are needed here
 
@@ -28,6 +28,7 @@ class LatentCodeExtractor(Dataset):
             shape_dir, resolution=resolution, cat=cat)
         self.csv_path = f"{text2Shape_dir}/{cat}/{csv_file_name}"
         self.shape_dict = self.construct_shape_dict()
+        self.load_similar_shapes = load_similar_shapes
 
     def construct_shape_dict(self):
         """Prepares the necessary info for the dataset and sets all the model ids present in the text2Shape dataset, after validating that their sdf files are present.
@@ -73,6 +74,9 @@ class LatentCodeExtractor(Dataset):
     def get_sdf_from_model_id(self, model_id):
         return self.shapenet_dataset.get_item_by_id(model_id)
 
+    def get_z_shape_from_model_id(self, model_id):
+        return self.shapenet_dataset.get_z_shape(model_id)
+
     def __getitem__(self, index):
         """Gets an item for the dataset
 
@@ -92,19 +96,26 @@ class LatentCodeExtractor(Dataset):
         model_id = self.model_ids[index]
         values = self.shape_dict[model_id]
         shape_sdf = self.get_sdf_from_model_id(model_id)
-        similar_models = values["similar_models"]
-        similar_shapes_sdfs = [torch.cat([self.get_sdf_from_model_id(
-            model_id).unsqueeze(0) for model_id in shapeset], dim=0) for shapeset in similar_models]
-        shape_set_scores = [torch.tensor(value)
-                            for value in values["similar_scores"]]
-        item_dict = {
-            "shape_id": model_id,
-            "shape_sets": similar_models,
-            "shape_sets_scores": shape_set_scores,
-            "shape_sets_sdfs": similar_shapes_sdfs,
-            "shape_sdf": shape_sdf,
-            "shape_sets_indices": values["csv_row_indices"]
-        }
+
+        if (self.load_similar_shapes):
+            similar_models = values["similar_models"]
+            similar_shapes_z = [torch.cat([self.get_z_shape_from_model_id(
+                model_id).unsqueeze(0) for model_id in shapeset], dim=0) for shapeset in similar_models]
+            shape_set_scores = [torch.tensor(value)
+                                for value in values["similar_scores"]]
+            item_dict = {
+                "shape_id": model_id,
+                "shape_sets": similar_models,
+                "shape_sets_scores": shape_set_scores,
+                "shape_sets_z": similar_shapes_z,
+                "shape_sdf": shape_sdf,
+                "shape_sets_indices": values["csv_row_indices"]
+            }
+        else:
+            item_dict = {
+                "shape_id": model_id,
+                "shape_sdf": shape_sdf
+            }
         return item_dict
 
     def name(self):

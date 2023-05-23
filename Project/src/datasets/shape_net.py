@@ -49,6 +49,10 @@ class ShapenetDataset(Dataset):
         filename = f"{self.shape_dir}/{self.cat}/{shape_id}/{shape_id}{SDF_SUFFIX}{SDF_EXTENSION}"
         return filename
 
+    def get_z_shape(self, shape_id):
+        filename = f"{self.shape_dir}/{self.cat}/{shape_id}/z_shape.pth"
+        return torch.load(filename)
+
     def get_item_by_id(self, shape_id):
         """Directly gets the truncated sdf grid of a shape from its id
 
