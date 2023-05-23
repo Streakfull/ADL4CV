@@ -99,11 +99,11 @@ class LatentCodeExtractor(Dataset):
                             for value in values["similar_scores"]]
         item_dict = {
             "shape_id": model_id,
-            "shape_set": similar_models,
-            "shape_set_scores": shape_set_scores,
-            "shape_set_sdfs": similar_shapes_sdfs,
+            "shape_sets": similar_models,
+            "shape_sets_scores": shape_set_scores,
+            "shape_sets_sdfs": similar_shapes_sdfs,
             "shape_sdf": shape_sdf,
-            "shape_set_indices": values["csv_row_indices"]
+            "shape_sets_indices": values["csv_row_indices"]
         }
         return item_dict
 

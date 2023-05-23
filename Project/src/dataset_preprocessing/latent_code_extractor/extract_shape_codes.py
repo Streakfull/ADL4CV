@@ -120,11 +120,11 @@ def handle_shape_set(scores, shape_id, shape_sets, shape_sets_indices):
 for i in tqdm(range(len(dataset))):
     element = dataset[i]
     shape_sdf = element["shape_sdf"]
-    shape_sets = element["shape_set_sdfs"]
+    shape_sets = element["shape_sets_sdfs"]
     shape_set_ids = element["shape_set"]
-    scores = element["shape_set_scores"]
+    scores = element["shape_sets_scores"]
     shape_id = element["shape_id"]
-    shape_sets_indices = element["shape_set_indices"]
+    shape_sets_indices = element["shape_sets_indices"]
     handle_shape(shape_id, shape_sdf)
-    # handle_shape_set(scores, shape_id, shape_set_sdfs, shape_set_indices)
+    handle_shape_set(scores, shape_id, shape_sets, shape_sets_indices)
 save_stats_dict()
