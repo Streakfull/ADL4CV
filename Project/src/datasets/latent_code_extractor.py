@@ -2,6 +2,8 @@ from torch.utils.data import Dataset
 from ast import literal_eval
 from datasets.shape_net import ShapenetDataset
 import pandas as pd
+import torch
+from torch.nn.utils.rnn import pad_sequence
 
 
 class LatentCodeExtractor(Dataset):
@@ -34,11 +36,12 @@ class LatentCodeExtractor(Dataset):
             shape_dict dict{model_id:{ 
                 similar_models:string[][]
                 similar_scores:string[][]
+                csv_row_indices:int[]
             }}:  dictionary containing all the model_ids and all their corresponding shapesets according to the text phrase
                  In total: there are 6589 shapes and 41667 shape sets.
         """
         df = pd.read_csv(self.csv_path)
-        df = df[0:100]
+        df = df[0:5]
         # set rows with the no similar shapes to the empty array
         df.loc[df['similar_model_id'] == "0", "similar_model_id"] = "[]"
         df.loc[df['similar_model_score'] == "0", "similar_model_score"] = "[]"
@@ -50,13 +53,14 @@ class LatentCodeExtractor(Dataset):
         # Model ids are not unique in the df. pd.todict can't be used here
         for row in df.itertuples(index=False):
             shape_dict.setdefault(
-                row.model_id, {"similar_models": [], "similar_scores": []})
+                row.model_id, {"similar_models": [], "similar_scores": [], "csv_row_indices": []})
             # If similar models are found
             if (len(row.similar_model_id) > 0):
                 shape_dict[row.model_id]["similar_models"].append(
                     row.similar_model_id)
                 shape_dict[row.model_id]["similar_scores"].append(
                     row.similar_model_score)
+                shape_dict[row.model_id]["csv_row_indices"].append(row.index)
         # only consider shapes that have sdf in the dataset
         model_ids = shape_dict.keys()
         self.model_ids = list(
@@ -83,21 +87,23 @@ class LatentCodeExtractor(Dataset):
                                         for each shape in each shapeset
             shape_set_sdfs  Tensor[1,resolution,resolution,resolution][] : 2D array of tensors, each tensor represents the sdf representation of each shape in each shape set
             shape_sdf Tensor[1,resolution,resolution,resolution]:  Tensor containing the truncated sdf grid of the reference model
-
+            shape_set_indices int[]: 1D array identifying the shape set row index
         """
         model_id = self.model_ids[index]
         values = self.shape_dict[model_id]
         shape_sdf = self.get_sdf_from_model_id(model_id)
         similar_models = values["similar_models"]
-        similar_shapes_sdfs = [[self.get_sdf_from_model_id(
-            model_id) for model_id in shapeset] for shapeset in similar_models]
-
+        similar_shapes_sdfs = [torch.cat([self.get_sdf_from_model_id(
+            model_id).unsqueeze(0) for model_id in shapeset], dim=0) for shapeset in similar_models]
+        shape_set_scores = [torch.tensor(value)
+                            for value in values["similar_scores"]]
         item_dict = {
             "shape_id": model_id,
             "shape_set": similar_models,
-            "shape_set_scores": values["similar_scores"],
+            "shape_set_scores": shape_set_scores,
             "shape_set_sdfs": similar_shapes_sdfs,
-            "shape_sdf": shape_sdf
+            "shape_sdf": shape_sdf,
+            "shape_set_indices": values["csv_row_indices"]
         }
         return item_dict
 

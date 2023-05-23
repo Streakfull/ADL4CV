@@ -44,7 +44,7 @@ class AutoEncoder(nn.Module):
         init_weights(self.quant_conv, 'normal', 0.02)
         init_weights(self.post_quant_conv, 'normal', 0.02)
 
-    def encode(self, x):
+    def encode(self, x, return_indices=False):
         """_summary_
 
             Args:
@@ -55,7 +55,12 @@ class AutoEncoder(nn.Module):
             """
         h = self.encoder(x)
         h = self.quant_conv(h)
-        quant, emb_loss, info = self.quantize(h, is_voxel=True)
+        # If return indices is set to true returned shape is g^3
+        quant, emb_loss, info = self.quantize(
+            h, is_voxel=True, return_indices=return_indices)
+
+        if (return_indices):
+            return quant
         return quant, emb_loss, info
 
     def decode(self, quant):

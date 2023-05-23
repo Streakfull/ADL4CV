@@ -68,7 +68,7 @@ class VectorQuantizer(nn.Module):
         back = torch.gather(used[None, :][inds.shape[0]*[0], :], 1, inds)
         return back.reshape(ishape)
 
-    def forward(self, z, temp=None, rescale_logits=False, return_logits=False, is_voxel=False):
+    def forward(self, z, temp=None, rescale_logits=False, return_logits=False, is_voxel=False, return_indices=False):
         assert temp is None or temp == 1.0, "Only for interface compatible with Gumbel"
         assert rescale_logits == False, "Only for interface compatible with Gumbel"
         assert return_logits == False, "Only for interface compatible with Gumbel"
@@ -86,6 +86,8 @@ class VectorQuantizer(nn.Module):
                          rearrange(self.embedding.weight, 'n d -> d n'))
 
         min_encoding_indices = torch.argmin(d, dim=1)
+        if (return_indices):
+            return min_encoding_indices, None, None
         z_q = self.embedding(min_encoding_indices).view(z.shape)
         perplexity = None
         min_encodings = None
