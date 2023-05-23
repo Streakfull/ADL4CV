@@ -10,6 +10,7 @@ from encoder.pvqae import PVQVAE
 from torch.nn import functional
 from tqdm import tqdm
 import json
+from termcolor import colored
 
 
 device = "cpu"
@@ -19,15 +20,15 @@ root = ".."
 dataset_path = f"{root}/{DATA_SET_PATH}"
 text2Shape_dataset_path = f"{root}/{TEXT2SHAPE_DATA_SET_PATH}"
 cat = "chairs"
-shapeset_length_threshold = 20
+shapeset_length_threshold = 10
 
 dataset = LatentCodeExtractor(
-    text2Shape_dataset_path, dataset_path, cat=cat, resolution=32)
+    text2Shape_dataset_path, dataset_path, cat=cat, resolution=64)
 
 
 vq_cfg = f"{root}/configs/pvqae_configs.yaml"
 # Chckpoint here
-chkpoint = f"{root}/encoder/raw_dataset/logs/pvqae-128-z/ckpt/vqvae_epoch-latest.pth"
+chkpoint = f"{root}/{DATA_SET_PATH}/checkpoints/experiment_name/ckpt/vqvae_epoch-best.pth"
 options = BaseOptions(config_path=vq_cfg,
                       name="pvqae-extraction", is_train=False)
 model = PVQVAE()
@@ -37,7 +38,8 @@ model.load_ckpt(chkpoint)
 stats = {
     "shapes_dict": {},
     "shapes_counter": 0,
-    "shape_set_counter": 0
+    "shape_set_counter": 0,
+    "row_indices":{}
 }
 codebook_indices = model.n_embed
 
@@ -91,13 +93,15 @@ def handle_shape(shape_id, shape_sdf):
 
 def handle_shape_set_sequentially(shape_set, scores):
     z_set = torch.zeros((model.ncubes_per_dim, model.ncubes_per_dim,
-                        model.ncubes_per_dim, codebook_indices))
+                        model.ncubes_per_dim, codebook_indices)).to(device)
     for i, shape in enumerate(shape_set):
         indices = model.encode_indices(shape.unsqueeze(0)).squeeze(0)
         z_shape = functional.one_hot(
             indices, num_classes=codebook_indices) * scores[i]
         z_set += z_shape
     z_set = z_set / torch.sum(scores)
+    print(colored(f'[*] Shape set done', 'yellow'))
+    return z_set
 
 
 def handle_shape_set(scores, shape_id, shape_sets, shape_sets_indices):
@@ -113,8 +117,9 @@ def handle_shape_set(scores, shape_id, shape_sets, shape_sets_indices):
         return
     for i, shape_set in enumerate(shape_sets):
         shapes_length = shape_set.size()[0]
+        print(colored(f'[*]{shapes_length} shape set size', 'blue'))
         if (shapes_length > shapeset_length_threshold):
-            z_set = handle_shape_set_sequentially(shape_set, scores=[i])
+            z_set = handle_shape_set_sequentially(shape_set, scores=scores[i])
         else:
             indices = model.encode_indices(shape_set)
             z_set = functional.one_hot(indices, num_classes=codebook_indices)
@@ -131,16 +136,20 @@ def handle_shape_set(scores, shape_id, shape_sets, shape_sets_indices):
         save_tensor(z_set, shape_id, is_shape_set=True,
                     shape_set_row_index=shape_sets_indices[i])
         stats["shape_set_counter"] += 1
+        stats["row_indices"][shape_sets_indices[i]] = True 
 
 
 for i in tqdm(range(len(dataset))):
     element = dataset[i]
     shape_sdf = element["shape_sdf"]
     shape_sets = element["shape_sets_sdfs"]
-    shape_set_ids = element["shape_set"]
+    shape_set_ids = element["shape_sets"]
     scores = element["shape_sets_scores"]
     shape_id = element["shape_id"]
     shape_sets_indices = element["shape_sets_indices"]
+
     handle_shape(shape_id, shape_sdf)
+    print(colored(f'[*]{shape_id} done', 'blue'))
     handle_shape_set(scores, shape_id, shape_sets, shape_sets_indices)
-save_stats_dict()
+    print(colored(f'[*]{shape_id} shapeset done', 'blue'))
+    save_stats_dict()
