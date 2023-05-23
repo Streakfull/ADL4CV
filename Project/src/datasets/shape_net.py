@@ -45,19 +45,22 @@ class ShapenetDataset(Dataset):
         Returns:
             string: full folder path relative to current working directory
         """
-        # filename = f"{self.shape_dir}/{self.cat}/{shape_id}/ori_sample{SDF_EXTENSION}"
-        filename = f"{self.shape_dir}/{self.cat}/{shape_id}/{shape_id}{SDF_SUFFIX}{SDF_EXTENSION}"
+        filename = f"{self.shape_dir}/{self.cat}/{shape_id}/ori_sample{SDF_EXTENSION}"
+        #filename = f"{self.shape_dir}/{self.cat}/{shape_id}/{shape_id}{SDF_SUFFIX}{SDF_EXTENSION}"
         return filename
 
     def get_z_shape(self, shape_id):
-        filename = f"{self.shape_dir}/{self.cat}/{shape_id}/z_shape.pth"
+        # filename = f"{self.shape_dir}/{self.cat}/{shape_id}/z_shape.pt"
+        # tensor = torch.load(filename)
+        # return tensor
         try:
-            tensor = torch.load(filename)
+            filename = f"{self.shape_dir}/{self.cat}/{shape_id}/z_shape.pt"
+            tensor = torch.load(filename, map_location=torch.device('cpu'))
             return tensor
         except:
             print("Not Found", shape_id)
             zeros = torch.zeros(
-                (self.resolution, self.resolution, self.resolution, 256))
+                (8,8,8, 512))
             zeros[:, :, :, 0] = 1
             return zeros
 

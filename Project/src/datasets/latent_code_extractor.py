@@ -42,7 +42,6 @@ class LatentCodeExtractor(Dataset):
                  In total: there are 6589 shapes and 41667 shape sets.
         """
         df = pd.read_csv(self.csv_path)
-        df = df[0:5]
         # set rows with the no similar shapes to the empty array
         df.loc[df['similar_model_id'] == "0", "similar_model_id"] = "[]"
         df.loc[df['similar_model_score'] == "0", "similar_model_score"] = "[]"
@@ -94,6 +93,7 @@ class LatentCodeExtractor(Dataset):
             shape_set_indices int[]: 1D array identifying the shape set row index
         """
         model_id = self.model_ids[index]
+   
         values = self.shape_dict[model_id]
         shape_sdf = self.get_sdf_from_model_id(model_id)
 

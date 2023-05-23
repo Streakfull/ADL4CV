@@ -3,7 +3,7 @@ import sys
 import os
 import torch
 sys.path.append(os.path.abspath(os.path.join('..', '')))  # noqa
-from dataset_preprocessing.constants import DATA_SET_PATH, TEXT2SHAPE_DATA_SET_PATH
+from dataset_preprocessing.constants import DATA_SET_PATH, TEXT2SHAPE_DATA_SET_PATH,FULL_DATA_SET_PATH
 from datasets.latent_code_extractor import LatentCodeExtractor
 from options.base_options import BaseOptions
 from encoder.pvqae import PVQVAE
@@ -11,24 +11,26 @@ from torch.nn import functional
 from tqdm import tqdm
 import json
 from termcolor import colored
+import pyblaze.multiprocessing as xmp
+import numpy as np
 
 
 device = "cpu"
-if (torch.cuda.is_available()):
-    device = "cuda"
+# if (torch.cuda.is_available()):
+#     device = "cuda"
 root = ".."
 dataset_path = f"{root}/{DATA_SET_PATH}"
 text2Shape_dataset_path = f"{root}/{TEXT2SHAPE_DATA_SET_PATH}"
 cat = "chairs"
-shapeset_length_threshold = 10
+shapeset_length_threshold = 20
 
 dataset = LatentCodeExtractor(
-    text2Shape_dataset_path, dataset_path, cat=cat, resolution=64, load_similar_shapes=False)
+    text2Shape_dataset_path, dataset_path, cat=cat, resolution=64, load_similar_shapes=True)
 
 
 vq_cfg = f"{root}/configs/pvqae_configs.yaml"
 # Chckpoint here
-chkpoint = f"{root}/{DATA_SET_PATH}/checkpoints/experiment_name/ckpt/vqvae_epoch-best.pth"
+chkpoint = f"{root}/{FULL_DATA_SET_PATH}/checkpoints/experiment_name/ckpt/vqvae_epoch-best.pth"
 options = BaseOptions(config_path=vq_cfg,
                       name="pvqae-extraction", is_train=False)
 model = PVQVAE()
@@ -58,13 +60,15 @@ def save_tensor(input, shape_id, is_shape_set=False, shape_set_row_index=0):
     if is_shape_set:
         file_path = f"{dataset_path}/{cat}/{shape_id}/z_set_{shape_set_row_index}.pt"
         # file_path = f"{dataset_path}/z_set_{shape_set_row_index}.pt"
-    torch.save(input, file_path)
+    with open(file_path,'wb') as f:
+      torch.save(input, f)
+    print(colored(f'[*]{file_path} shapeset saved', 'yellow'))
 
 
 def save_stats_dict():
     """Saves the stats that has all relevant info about the process in the dataset path
     """
-    with open(f"{dataset_path}/stats.json", 'w') as f:
+    with open(f"{dataset_path}/stats-shapeset-3.json", 'w') as f:
         # Write the dictionary to the file in JSON format
         json.dump(stats, f)
 
@@ -78,9 +82,9 @@ def handle_shape(shape_id, shape_sdf):
     Saves:
         z tensor[ncubes_per_dim,ncubes_per_dim,ncubes_per_dim,n_embed ]: probability distribution over all possible codebook indices
     """
-    is_shape_id_done = stats["shapes_dict"].get(shape_id, False)
-    if (is_shape_id_done):
-        return
+    #is_shape_id_done = stats["shapes_dict"].get(shape_id, False)
+    # if (is_shape_id_done):
+    #     return
     # 8 * 8 * 8
     # Unsequeezed since the model expects a batch dimension
     indices = model.encode_indices(shape_sdf.unsqueeze(0)).squeeze(0)
@@ -136,8 +140,26 @@ def handle_shape_set(scores, shape_id, shape_sets, shape_sets_indices):
         stats["shape_set_counter"] += 1
         stats["row_indices"][shape_sets_indices[i]] = True
 
+#TODO: Batch process this
+def extract_z_shape():
+  for i in tqdm(range(4740,len(dataset))):
+    element = dataset[i]
+    shape_sdf = element["shape_sdf"]
+    # shape_sets = element["shape_sets_z"]
+    # shape_set_ids = element["shape_sets"]
+    # scores = element["shape_sets_scores"]
+    shape_id = element["shape_id"]
+    # shape_sets_indices = element["shape_sets_indices"]
 
-for i in tqdm(range(len(dataset))):
+    handle_shape(shape_id, shape_sdf)
+    print(colored(f'[*]{shape_id} done', 'blue'))
+    #handle_shape_set(scores, shape_id, shape_sets, shape_sets_indices)
+    #print(colored(f'[*]{shape_id} shapeset done', 'blue'))
+    save_stats_dict()
+
+
+def extract_z_shapesets():
+   for i in tqdm(range(len(dataset))):
     element = dataset[i]
     shape_sdf = element["shape_sdf"]
     shape_sets = element["shape_sets_z"]
@@ -147,7 +169,36 @@ for i in tqdm(range(len(dataset))):
     shape_sets_indices = element["shape_sets_indices"]
 
    # handle_shape(shape_id, shape_sdf)
-    print(colored(f'[*]{shape_id} done', 'blue'))
+    #print(colored(f'[*]{shape_id} done', 'blue'))
     handle_shape_set(scores, shape_id, shape_sets, shape_sets_indices)
     print(colored(f'[*]{shape_id} shapeset done', 'blue'))
     save_stats_dict()
+  
+def extract_z_shape_set_parallel(i):
+    element = dataset[i]
+    shape_sdf = element["shape_sdf"]
+    shape_sets = element["shape_sets_z"]
+    shape_set_ids = element["shape_sets"]
+    scores = element["shape_sets_scores"]
+    shape_id = element["shape_id"]
+    shape_sets_indices = element["shape_sets_indices"]
+
+   # handle_shape(shape_id, shape_sdf)
+    #print(colored(f'[*]{shape_id} done', 'blue'))
+    handle_shape_set(scores, shape_id, shape_sets, shape_sets_indices)
+    print(colored(f'[*]{shape_id} shapeset done', 'blue'))
+    stats_dict["shapes_dict"][shape_id] = True
+    statis_dict["shapes_dict"][i] = True
+    save_stats_dict()
+
+
+
+def parallel():
+  indices = np.arange(len(dataset))
+  tokenizer = xmp.Vectorizer(extract_z_shape_set_parallel,num_workers=8)
+  tokenizer.process(indices)
+  
+
+
+parallel()
+
