@@ -18,12 +18,12 @@ class LatentCodeExtractor(Dataset):
             shape_dir (string): directory containing all the shapes and their sdf files
             csv_file_name (str, optional): text2shape csv file name. Defaults to "similar_phrase_2.csv".
             cat (str, optional): category of shapes to be used all|chairs|tables . Defaults to "chairs".
-            resolution (int, optional): Resolution of stored sdf files 
+            resolution (int, optional): Resolution of stored sdf files
+            load_similar_shapes (boolean, optional): Indicates if similar shapes will be loaded and returned
         """
         self.shape_dir = shape_dir
         self.text2Shape_dir = text2Shape_dir
         self.shape_dir = shape_dir
-        # TODO: Add cat here
         self.shapenet_dataset = ShapenetDataset(
             shape_dir, resolution=resolution, cat=cat)
         self.csv_path = f"{text2Shape_dir}/{cat}/{csv_file_name}"
@@ -76,9 +76,9 @@ class LatentCodeExtractor(Dataset):
     def get_z_shape_from_model_id(self, model_id):
         return self.shapenet_dataset.get_z_shape(model_id)
 
-    def get_id_from_index(self,index):
-       model_id = self.model_ids[index]
-       return model_id
+    def get_id_from_index(self, index):
+        model_id = self.model_ids[index]
+        return model_id
 
     def __getitem__(self, index):
         """Gets an item for the dataset
@@ -97,7 +97,7 @@ class LatentCodeExtractor(Dataset):
             shape_set_indices int[]: 1D array identifying the shape set row index
         """
         model_id = self.model_ids[index]
-   
+
         values = self.shape_dict[model_id]
         shape_sdf = self.get_sdf_from_model_id(model_id)
 
