@@ -8,7 +8,7 @@ class BaseOptions():
 
     def __init__(self, is_train=True, device=None, config_path=None, gpu_ids=None,
                  logs_dir="raw_dataset/logs", tb_dir="raw_dataset/tb", name="Model", lr=1e-4, batch_size=12, n_epochs=4, print_freq=1, nepochs_decay=200, save_epoch_frequency=3,
-                 logs_modeldir="raw_dataset/model", display_freq=6, save_latest_freq=5000,
+                 logs_modeldir="raw_dataset/model", display_freq=6, save_latest_freq=5000
                  ):
         self.is_train = is_train
         self.config_path = config_path

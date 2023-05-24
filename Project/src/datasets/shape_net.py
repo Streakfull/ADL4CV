@@ -6,7 +6,7 @@ from dataset_preprocessing.constants import SDF_EXTENSION, SDF_SUFFIX
 
 
 class ShapenetDataset(Dataset):
-    def __init__(self, shape_dir, full_data_set_dir, resolution=64, transform=None, cat="all", max_dataset_size=None):
+    def __init__(self, shape_dir, resolution=64, transform=None, cat="chairs", max_dataset_size=None, trunc_thres=0.2):
         """Initializes the shape dataset class 
 
         Args:
@@ -21,7 +21,7 @@ class ShapenetDataset(Dataset):
         self.transform = transform
         self.resolution = resolution
         self.cat = cat
-        self.full_data_set_dir = full_data_set_dir
+        self.trunc_thres = trunc_thres
         self.shapes = self.get_directory_ids()
         self.max_dataset_size = max_dataset_size
         if (max_dataset_size):
@@ -33,7 +33,7 @@ class ShapenetDataset(Dataset):
     def get_directory_ids(self):
         if (self.cat == "all"):
             return os.listdir(self.shape_dir)
-        directory_name = f"{self.full_data_set_dir}/{self.cat}"
+        directory_name = f"{self.shape_dir}/{self.cat}"
         return os.listdir(directory_name)
 
     def full_file_path(self, shape_id):
@@ -46,13 +46,47 @@ class ShapenetDataset(Dataset):
             string: full folder path relative to current working directory
         """
         filename = f"{self.shape_dir}/{self.cat}/{shape_id}/ori_sample{SDF_EXTENSION}"
+        #filename = f"{self.shape_dir}/{self.cat}/{shape_id}/{shape_id}{SDF_SUFFIX}{SDF_EXTENSION}"
         return filename
+
+    def get_z_shape(self, shape_id):
+        # filename = f"{self.shape_dir}/{self.cat}/{shape_id}/z_shape.pt"
+        # tensor = torch.load(filename)
+        # return tensor
+        try:
+            filename = f"{self.shape_dir}/{self.cat}/{shape_id}/z_shape.pt"
+            tensor = torch.load(filename, map_location=torch.device('cpu'))
+            return tensor
+        except:
+            print("Not Found", shape_id)
+            zeros = torch.zeros(
+                (8,8,8, 512))
+            zeros[:, :, :, 0] = 1
+            return zeros
+
+    def get_item_by_id(self, shape_id):
+        """Directly gets the truncated sdf grid of a shape from its id
+
+        Args:
+            shape_id (string): ID of the shape being retrieved
+
+        Returns:
+           sdf_grid Tenspr[1,resolution,resolution,resolution]: Truncated sdf grid of the shape
+        """
+        filename = self.full_file_path(shape_id)
+        sdf_grid = read_sdf(filename, self.resolution)
+        sdf_grid = torch.Tensor(sdf_grid)
+        if self.transform:
+            sdf_grid = self.transform(sdf_grid)
+
+        thres = self.trunc_thres
+        if thres != 0.0:
+            sdf_grid = torch.clamp(sdf_grid, min=-thres, max=thres)
+        return sdf_grid.view(1, self.resolution, self.resolution, self.resolution)
 
     def __getitem__(self, idx):
         shape_id = self.shapes[idx]
-        filename = self.full_file_path(shape_id)
-        sdf_grid = read_sdf(filename, self.resolution)
-        if self.transform:
-            sdf_grid = self.transform(sdf_grid)
-        sdf_grid = torch.Tensor(sdf_grid)
-        return sdf_grid.view(1, self.resolution, self.resolution, self.resolution)
+        return self.get_item_by_id(shape_id)
+
+    def name(self):
+        return 'SDFDataset'

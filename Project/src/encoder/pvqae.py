@@ -11,7 +11,7 @@ from models.pvqvae_networks.losses import VQLoss
 import os
 from torch import optim
 from termcolor import colored
-from utils.util_3d import render_sdf, init_mesh_renderer
+#from utils.util_3d import render_sdf, init_mesh_renderer
 
 
 class PVQVAE(BaseModel):
@@ -33,6 +33,7 @@ class PVQVAE(BaseModel):
         n_embed = mparam.n_embed
         embed_dim = mparam.embed_dim
         ddconfig = mparam.ddconfig
+        self.n_embed = n_embed
 
         n_down = len(ddconfig.ch_mult) - 1
 
@@ -74,8 +75,8 @@ class PVQVAE(BaseModel):
         assert (nC % self.cube_size) == 0, 'nC should be divisable by cube_size'
 
         dist, elev, azim = 1.7, 20, 20
-        self.renderer = init_mesh_renderer(
-            image_size=256, dist=dist, elev=elev, azim=azim, device=self.opt.device)
+        # self.renderer = init_mesh_renderer(
+        #     image_size=256, dist=dist, elev=elev, azim=azim, device=self.opt.device)
 
         self.best_iou = -1e12
 
@@ -113,6 +114,14 @@ class PVQVAE(BaseModel):
         vars_list = ['x', 'x_cubes']
 
         self.tocuda(var_names=vars_list)
+
+    def encode_indices(self, sdf):
+        n_batch = sdf.shape[0]
+        self.set_input(sdf)
+        indices = self.vqvae.encode(self.x_cubes, return_indices=True)
+        indices = indices.reshape(
+            n_batch, self.ncubes_per_dim,  self.ncubes_per_dim,  self.ncubes_per_dim)
+        return indices
 
     def forward(self):
         # qloss: codebook loss
