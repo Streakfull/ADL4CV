@@ -76,6 +76,10 @@ class LatentCodeExtractor(Dataset):
     def get_z_shape_from_model_id(self, model_id):
         return self.shapenet_dataset.get_z_shape(model_id)
 
+    def get_id_from_index(self,index):
+       model_id = self.model_ids[index]
+       return model_id
+
     def __getitem__(self, index):
         """Gets an item for the dataset
 

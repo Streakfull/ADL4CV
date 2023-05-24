@@ -13,6 +13,8 @@ import json
 from termcolor import colored
 import pyblaze.multiprocessing as xmp
 import numpy as np
+import ast
+
 
 
 device = "cpu"
@@ -22,20 +24,20 @@ root = ".."
 dataset_path = f"{root}/{DATA_SET_PATH}"
 text2Shape_dataset_path = f"{root}/{TEXT2SHAPE_DATA_SET_PATH}"
 cat = "chairs"
-shapeset_length_threshold = 20
+shapeset_length_threshold = 40
 
 dataset = LatentCodeExtractor(
     text2Shape_dataset_path, dataset_path, cat=cat, resolution=64, load_similar_shapes=True)
 
 
-vq_cfg = f"{root}/configs/pvqae_configs.yaml"
-# Chckpoint here
-chkpoint = f"{root}/{FULL_DATA_SET_PATH}/checkpoints/experiment_name/ckpt/vqvae_epoch-best.pth"
-options = BaseOptions(config_path=vq_cfg,
-                      name="pvqae-extraction", is_train=False)
-model = PVQVAE()
-model.initialize(options)
-model.load_ckpt(chkpoint)
+# vq_cfg = f"{root}/configs/pvqae_configs.yaml"
+# # Chckpoint here
+# chkpoint = f"{root}/{FULL_DATA_SET_PATH}/checkpoints/experiment_name/ckpt/vqvae_epoch-best.pth"
+# options = BaseOptions(config_path=vq_cfg,
+#                       name="pvqae-extraction", is_train=False)
+# model = PVQVAE()
+# model.initialize(options)
+# model.load_ckpt(chkpoint)
 
 stats = {
     "shapes_dict": {},
@@ -43,7 +45,10 @@ stats = {
     "shape_set_counter": 0,
     "row_indices": {}
 }
-codebook_indices = model.n_embed
+#codebook_indices = model.n_embed
+
+codebook_indices = 512
+n_cubes_per_dim = 8
 
 
 def save_tensor(input, shape_id, is_shape_set=False, shape_set_row_index=0):
@@ -68,9 +73,14 @@ def save_tensor(input, shape_id, is_shape_set=False, shape_set_row_index=0):
 def save_stats_dict():
     """Saves the stats that has all relevant info about the process in the dataset path
     """
-    with open(f"{dataset_path}/stats-shapeset-3.json", 'w') as f:
+    with open(f"{dataset_path}/stats-shapeset-4.json", 'w') as f:
         # Write the dictionary to the file in JSON format
         json.dump(stats, f)
+
+def save_dict(file_name,dictionary):
+   with open(f"{dataset_path}/{file_name}", 'w') as f:
+        # Write the dictionary to the file in JSON format
+        json.dump(dictionary, f)
 
 
 def handle_shape(shape_id, shape_sdf):
@@ -96,8 +106,8 @@ def handle_shape(shape_id, shape_sdf):
 
 
 def handle_shape_set_sequentially(shape_set, scores):
-    z_set = torch.zeros((model.ncubes_per_dim, model.ncubes_per_dim,
-                        model.ncubes_per_dim, codebook_indices)).to(device)
+    z_set = torch.zeros((8, 8,
+                        8, codebook_indices)).to(device)
     for i, shape in enumerate(shape_set):
         z_set += shape * scores[i]
     z_set = z_set / torch.sum(scores)
@@ -173,32 +183,75 @@ def extract_z_shapesets():
     handle_shape_set(scores, shape_id, shape_sets, shape_sets_indices)
     print(colored(f'[*]{shape_id} shapeset done', 'blue'))
     save_stats_dict()
+
+info = open(f"{dataset_path}/completed_set_8.json",)
+
+dictionary = json.load(info)
+
+print(len(dictionary.keys()))
   
 def extract_z_shape_set_parallel(i):
+    shape_id = dataset.get_id_from_index(i)
+    is_done = dictionary.get(shape_id,False)
+    if(is_done):
+      print(colored(f'[*]{shape_id} already done', 'green'))
+      return
     element = dataset[i]
+  
+    shape_id = element["shape_id"]
     shape_sdf = element["shape_sdf"]
     shape_sets = element["shape_sets_z"]
     shape_set_ids = element["shape_sets"]
     scores = element["shape_sets_scores"]
-    shape_id = element["shape_id"]
+
     shape_sets_indices = element["shape_sets_indices"]
 
    # handle_shape(shape_id, shape_sdf)
     #print(colored(f'[*]{shape_id} done', 'blue'))
     handle_shape_set(scores, shape_id, shape_sets, shape_sets_indices)
     print(colored(f'[*]{shape_id} shapeset done', 'blue'))
-    stats_dict["shapes_dict"][shape_id] = True
-    statis_dict["shapes_dict"][i] = True
+    stats["shapes_dict"][shape_id] = True
+    stats["shapes_dict"][str(i)] = True
     save_stats_dict()
 
 
 
 def parallel():
-  indices = np.arange(len(dataset))
-  tokenizer = xmp.Vectorizer(extract_z_shape_set_parallel,num_workers=8)
+  indices = np.arange(len(dataset),dtype=int)
+  tokenizer = xmp.Vectorizer(extract_z_shape_set_parallel,num_workers=16)
   tokenizer.process(indices)
   
+completed_shape_set ={
 
+}
+
+#count_done = 0
+def find_completed_shape_sets():
+  main_directory = f"{root}/{DATA_SET_PATH}/{cat}"
+  directories = os.listdir(main_directory)
+  print(len(directories))
+  for directory in directories:
+    files = os.listdir(f"{main_directory}/{directory}")
+    if(len(files)>=3):
+      completed_shape_set[directory] = True
+      #count_done +=1
+  save_dict("completed_set_8.json", completed_shape_set)
+
+
+
+
+
+
+
+
+
+
+
+
+
+#print(count_done)
+
+#find_completed_shape_sets()
 
 parallel()
 
