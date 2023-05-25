@@ -166,6 +166,7 @@ cython_debug/
 #.idea/
 
 sandbox.py
+sandbox.ipynb
 raw_dataset/
 raw_dataset/MinimizedDataSet
 raw_dataset/*

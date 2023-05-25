@@ -8,7 +8,7 @@ from datasets.dataset_utils import sample_z_set
 
 
 class ShapeNetZSets(Dataset):
-    def __init__(self, shape_dir, shape_set_paths="shape_set_paths.json", cat="chairs"):
+    def __init__(self, shape_dir, shape_set_paths="shape_set_paths.json", cat="chairs", max_data_set_size=None):
         """Aggregation dataset of all z_shapes and z_sets
 
         Args:
@@ -22,8 +22,11 @@ class ShapeNetZSets(Dataset):
         self.cat = cat
         self.shape_sets = list(self.shape_set_paths_json.keys())
         self.single_shapes = os.listdir(f"{shape_dir}/{cat}")
+        self.max_data_size = max_data_set_size
 
     def __len__(self):
+        if (self.max_data_size != None):
+            return self.max_data_size
         return len(self.shape_sets) + len(self.single_shapes)
 
     # TODO: Handle this better with the shapenet dataset
@@ -76,5 +79,6 @@ class ShapeNetZSets(Dataset):
         q_set = sample_z_set(z_set)
         return {
             "z_set": z_set,
-            "q_set": q_set
+            "q_set": q_set,
+            "idx": q_set
         }

@@ -19,5 +19,5 @@ def sample_z_set(z_set):
     # one hot encode for cross entropy loss  g^3 x 512
     num_classes = z_set.shape[-1]
     q_set = Categorical(z_set).sample()
-    q_set = functional.one_hot(q_set, num_classes=num_classes)
+    # q_set = functional.one_hot(q_set, num_classes=num_classes)
     return q_set
