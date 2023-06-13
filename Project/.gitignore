@@ -172,4 +172,5 @@ raw_dataset/MinimizedDataSet
 raw_dataset/*
 logs/*
 AutoSDF-Text2shape/*
+AutoSDF-Text2shape
 #.idea/
