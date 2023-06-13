@@ -18,7 +18,3 @@ def read_sdf(filename, resolution):
     sdf = sdf['pc_sdf_sample'][:]
     sdf_grid = sdf.reshape((resolution, resolution, resolution))
     return sdf_grid
-
-
-"1007e20d5e811b308351982a6e40cf41_sdf.h5"
-"1007e20d5e811b308351982a6e40cf41_sdf.h5"
