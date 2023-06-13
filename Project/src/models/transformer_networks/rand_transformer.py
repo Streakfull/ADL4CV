@@ -93,8 +93,8 @@ class RandTransformer(nn.Module):
 
     def forward(self, inp, inp_posn, tgt_posn):
         """ Here we will have the full sequence of inp """
-        device = inp.get_device()
-        # device = "cpu"
+        # device = inp.get_device()
+        device = "cpu"
         seq_len, bs = inp.shape[:2]
         tgt_len = tgt_posn.shape[0]
 

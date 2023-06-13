@@ -22,7 +22,7 @@ from models.transformer_networks.rand_transformer import RandTransformer
 from encoder.auto_encoder import AutoEncoder as PVQVAE
 
 import utils.util
-from utils.util_3d import init_mesh_renderer, render_sdf
+# from utils.util_3d import init_mesh_renderer, render_sdf
 
 
 class RandTransformerModel(BaseModel):
@@ -116,8 +116,8 @@ class RandTransformerModel(BaseModel):
 
         # setup renderer
         dist, elev, azim = 1.7, 20, 20
-        self.renderer = init_mesh_renderer(
-            image_size=256, dist=dist, elev=elev, azim=azim, device=self.opt.device)
+        # self.renderer = init_mesh_renderer(
+        #     image_size=256, dist=dist, elev=elev, azim=azim, device=self.opt.device)
 
     def load_vqvae(self, vq_ckpt):
         assert type(vq_ckpt) == str
@@ -226,19 +226,22 @@ class RandTransformerModel(BaseModel):
         self.outp = self.tf(self.inp, self.inp_pos, self.tgt_pos)  # [:-1]
 
         # for vis
-        # with torch.no_grad():
-        #     # self.x = self.x
-        #    # self.outp = self.tf(self.inp, self.inp_pos, self.tgt_pos)
-        #     print("First decode")
-        #     self.x_recon = self.vqvae.decode_enc_idices(self.x_idx)
+        with torch.no_grad():
+            # self.x = self.x
+           # self.outp = self.tf(self.inp, self.inp_pos, self.tgt_pos)
+            print("First decode")
+            self.x_recon = self.vqvae.decode_enc_idices(self.x_idx)
 
-        #     # compute the prob. of next ele
-        #     outp = F.softmax(self.outp, dim=-1)
-        #     outp = outp.argmax(dim=-1)
-        #     # inverse of permutation: https://discuss.pytorch.org/t/how-to-quickly-inverse-a-permutation-by-using-pytorch/116205/2
-        #     # outp do not have <sos>
-        #     outp = outp[torch.argsort(self.gen_order)]
-        #     self.x_recon_tf = self.vqvae.decode_enc_idices(outp)
+            # compute the prob. of next ele
+            outp = F.softmax(self.outp, dim=-1)
+            outp = outp.argmax(dim=-1)
+            # inverse of permutation: https://discuss.pytorch.org/t/how-to-quickly-inverse-a-permutation-by-using-pytorch/116205/2
+            # outp do not have <sos>
+            outp = outp[torch.argsort(self.gen_order)]
+            self.x_recon_tf = self.vqvae.decode_enc_idices(outp)
+            np.save("recon.npy", self.x_recon.unsqueeze(0).unsqueeze(0).numpy())
+            np.save("recon-tf.npy",
+                    self.x_recon_tf.unsqueeze(0).unsqueeze(0).numpy())
 
     def inference(self, data, seq_len=None, gen_order=None, topk=None, prob=None, alpha=1., should_render=False, verbose=False):
         def top_k_logits(logits, k=5):
