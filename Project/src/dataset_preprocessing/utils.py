@@ -1,6 +1,6 @@
 import numpy as np
 import nrrd
-from constants import DATA_SET_PATH,OBJ_EXTENSION
+from constants import DATA_SET_PATH, OBJ_EXTENSION
 
 # Adapted from https://github.com/kchen92/text2shape
 
@@ -59,24 +59,11 @@ def export_mesh_to_obj(path, vertices, faces, useFacesPadding=False):
             file.write('\n')
 
 
-# TODO: Implement this
-# def save_sdf_as_numpy(hp_filename):
-#     """Reads h5 sdf file and stores it as a 1D numpy text array.
-#     Args:
-#         hp_filename: Filename of the sdf file.
-#     Returns:
-#         None
-#     """
-#     hx = h5py.File(hp_filename,"r")
-#     sdf = hx['pc_sdf_sample'][:]
-#     #sdf = sdf.reshape((64,64,64))
-#     np.savetxt("ok.txt",sdf)
-
 def construct_full_folder_path(folder_name):
-     return f"{DATA_SET_PATH}/{folder_name}"
+    return f"{DATA_SET_PATH}/{folder_name}"
 
 
-def construct_full_obj_file_path(folder_name,extension = OBJ_EXTENSION):
+def construct_full_obj_file_path(folder_name, extension=OBJ_EXTENSION):
     """ Constructs the full path to the nrrd file from the folder
         name in the dataset
 

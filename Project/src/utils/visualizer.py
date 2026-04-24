@@ -109,9 +109,8 @@ class Visualizer():
                 self.img_dir, 'step%.3d_%s_%s.png' % (epoch, label, im_name))
             try:
                 util.save_image(image_numpy, img_path)
-            except:
-                import pdb
-                pdb.set_trace()
+            except Exception as e:
+                print(f'[!] Failed to save image {img_path}: {e}')
 
         # log to tensorboard
         self.log_tensorboard_visuals(visuals, epoch, phase=phase)

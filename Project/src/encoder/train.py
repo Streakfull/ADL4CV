@@ -82,9 +82,6 @@ dset_f = inspect.getfile(train_ds.__class__)
 cprint(f'[*] saving model and dataset files: {model_f}, {dset_f}', 'blue')
 modelf_out = os.path.join(expr_dir, os.path.basename(model_f))
 dsetf_out = os.path.join(expr_dir, os.path.basename(dset_f))
-# os.system(f'cp {model_f} {modelf_out}')
-# os.system(f'cp {dset_f} {dsetf_out}')
-
 
 cprint("[*] Using pytorch's profiler...", 'blue')
 tensorboard_trace_handler = profiler.tensorboard_trace_handler(options.tb_dir)

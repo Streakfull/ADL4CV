@@ -11,7 +11,7 @@ from models.pvqvae_networks.losses import VQLoss
 import os
 from torch import optim
 from termcolor import colored
-#from utils.util_3d import render_sdf, init_mesh_renderer
+# from utils.util_3d import render_sdf, init_mesh_renderer
 
 
 class PVQVAE(BaseModel):
@@ -104,7 +104,6 @@ class PVQVAE(BaseModel):
 
     def set_input(self, input):
         '''Samples at training time'''
-        # import pdb; pdb.set_trace()
         x = input
         self.x = x
         self.input = x

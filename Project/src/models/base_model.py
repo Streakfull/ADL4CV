@@ -115,12 +115,9 @@ class BaseModel():
             print('[*] %s does not exist. loading from latest...' % ckpt_path)
             epoch = ckpt_path.split('epoch-')[-1].split('-')[0]
             epoch_label = 'epoch-%s' % epoch
-            # prevWarpN_ckpt_dir = f'%s/%s/%s/ckpt' % (opt.checkpoints_dir, opt.name, 'warp%s' % (str(l)))
-            # save_file = f'%s/%s_net_%s.pth' % (prevWarpN_ckpt_dir, epoch_label, network_label)
             ckpt_latest = ckpt_path.replace(epoch_label, 'epoch-latest')
             if not os.path.exists(ckpt_latest):
-                import pdb
-                pdb.set_trace()
+                raise FileNotFoundError(f'Checkpoint not found: {ckpt_latest}')
             ckpt_path = ckpt_latest
         network.load_state_dict(torch.load(ckpt_path))
         print(colored(f'[*] Network loaded from: {ckpt_path}. Done.', 'blue'))
